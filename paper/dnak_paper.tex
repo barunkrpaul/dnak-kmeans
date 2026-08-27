@@ -1,0 +1,507 @@
+% =====================================================================
+% DNAK v2: Delaunay-Neighbor Accelerated K-means
+% Target: Pattern Recognition Letters / Information Sciences (Elsevier)
+% Author: Barun Kr Paul (NITTTR Kolkata)
+% STATUS: draft with REAL measured results (3 seeds, exactness verified
+%         on every run). [TODO] items remain before submission.
+% =====================================================================
+\documentclass[review,12pt]{elsarticle}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{hyperref}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newdefinition{definition}{Definition}
+\journal{Pattern Recognition Letters}
+
+\begin{document}
+\begin{frontmatter}
+\title{DNAK: Exact Acceleration of Lloyd's $k$-Means in Linear Memory
+via Delaunay-Neighbor Pruning}
+
+\author[1]{Barun Kr Paul\corref{cor1}}
+\ead{[TODO: email]}
+\cortext[cor1]{Corresponding author}
+\affiliation[1]{organization={National Institute of Technical Teachers'
+Training and Research (NITTTR)}, city={Kolkata}, country={India}}
+% [TODO: add supervisor / co-authors]
+
+\begin{abstract}
+Exact accelerations of Lloyd's $k$-means algorithm face a well-known
+trade-off. Elkan's algorithm prunes the most distance computations but
+maintains $nk$ lower bounds, incurring $O(nk)$ memory and $O(nk)$
+bound-maintenance work every iteration; Hamerly's algorithm needs only
+$O(n)$ state but prunes far less. We propose DNAK (Delaunay-Neighbor
+Accelerated $K$-means), which occupies a new point on this frontier
+using computational geometry. DNAK maintains $O(n)$ state, yet when a
+point must be re-examined it performs a greedy walk on the Delaunay
+graph of the centroids --- provably reaching the exact nearest
+centroid while visiting only a constant number of candidates on
+average --- and recovers an \emph{exact} second-nearest bound for free
+from an order-2 Voronoi property. We prove DNAK reproduces Lloyd's
+assignments exactly. Across eight benchmark configurations (five
+synthetic Gaussian mixtures and three real datasets, three seeds each,
+exactness verified on every run), DNAK reduces distance computations
+by $5.7\times$--$48.6\times$ over Lloyd's algorithm, outperforming
+Hamerly's algorithm in every case. Elkan's algorithm computes fewer
+raw distances, but once its mandatory bound-maintenance work is
+included, DNAK performs the least total work of all methods in every
+configuration --- up to $43\times$ less than Lloyd's and up to
+$7.9\times$ less than Elkan's --- while using a factor $k$ less
+memory than Elkan. In a compiled implementation on datasets of up to
+$273{,}280$ points, DNAK is the fastest method in wall-clock time in
+every configuration: $11.1\times$--$26.2\times$ faster than Lloyd's
+algorithm, and $2.4\times$--$4.9\times$ faster than Elkan's, whose
+bound-maintenance overhead renders it slower than Hamerly's algorithm
+in practice at these dimensionalities.
+\end{abstract}
+
+\begin{keyword}
+$k$-means \sep Lloyd's algorithm \sep Delaunay triangulation \sep
+Voronoi diagram \sep computational geometry \sep exact acceleration
+\end{keyword}
+\end{frontmatter}
+
+% =====================================================================
+\section{Introduction}
+\label{sec:intro}
+
+The $k$-means problem seeks centroids $C=\{c_1,\dots,c_k\}\subset
+\mathbb{R}^d$ minimising $\mathrm{SSE}(C)=\sum_i \min_j \lVert
+x_i-c_j\rVert^2$ over data $X=\{x_1,\dots,x_n\}$. Lloyd's algorithm
+alternates assignment (each point to its nearest centroid) and update
+(each centroid to its cluster mean). The assignment step costs
+$\Theta(nkd)$ per iteration and dominates runtime, yet in late
+iterations centroids barely move and almost no point changes cluster,
+so most of this work is provably redundant.
+
+Exact accelerators eliminate this redundancy without changing the
+output. The two canonical bound-based methods bracket a trade-off.
+Elkan's algorithm maintains one upper bound and $k$ lower bounds per
+point: pruning is aggressive, but memory is $O(nk)$ and --- crucially
+--- \emph{every} bound must be corrected by centroid drift every
+iteration, an $O(nk)$ cost paid regardless of how many distances are
+actually avoided. Hamerly's algorithm keeps a single lower bound per
+point, reducing state and maintenance to $O(n)$, but a bound failure
+triggers a full $k$-way rescan.
+
+This paper asks whether computational geometry can break that
+trade-off: can an algorithm with Hamerly's $O(n)$ footprint avoid
+Hamerly's $O(k)$ fallback? Our answer is DNAK. Its key structural
+facts are classical: the Voronoi diagram of the centroids determines
+the assignment step; a point's second-nearest centroid is always a
+Delaunay neighbour of its nearest (an order-2 Voronoi property); and a
+greedy walk on the Delaunay graph from any start provably terminates
+at the true nearest centroid. DNAK combines these with drift-tightened
+bounds so that a skipped point costs nothing, a re-examined point
+costs an $O(1)$-size neighbourhood walk rather than a $k$-way scan,
+and every recomputed bound is \emph{exact} rather than merely valid.
+
+\paragraph{Contributions}
+(1)~DNAK, an exact accelerator of Lloyd's algorithm with $O(n)$ state
+whose fallback cost is the Delaunay degree, not $k$.
+(2)~Correctness proofs: greedy-walk exactness, exact second-nearest
+bounds via the order-2 Voronoi property, and iteration-by-iteration
+equivalence to Lloyd's algorithm (under general position, with a
+deterministic tie-breaking rule handling degenerate data).
+(3)~A controlled study on synthetic and real data, with a two-metric
+evaluation (distance computations and total operations) showing that
+DNAK dominates Hamerly's algorithm on both metrics, and dominates
+Elkan's algorithm on total work and memory while conceding raw
+distance counts --- an honest characterisation of where each method
+wins.
+
+% =====================================================================
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Bound-based exact accelerators}
+Elkan's algorithm applies the triangle inequality with $O(nk)$ bounds;
+Hamerly's algorithm compresses these to $O(n)$; Yinyang $k$-means
+groups centroids to interpolate between the two; Exponion restricts
+rescans to an annulus around the previous centroid. All derive
+candidate sets algebraically from bound values. DNAK instead derives
+its candidate set \emph{structurally} from the Delaunay graph, so its
+fallback cost is bounded by centroid-set geometry (average Delaunay
+degree) independently of bound tightness. The bound-maintenance
+asymmetry is central to our evaluation: per iteration Elkan performs
+$\Theta(nk)$ bound updates, whereas Hamerly and DNAK perform
+$\Theta(n)$. Prior work has noted that this overhead can erase Elkan's
+advantage in practice for small $d$; our measurements quantify the
+effect directly.
+[TODO: full citations --- Elkan 2003; Hamerly 2010; Ding et al.\ 2015;
+Newling \& Fleuret 2016.]
+
+\paragraph{Tree- and geometry-based methods}
+Kanungo et al.'s filtering algorithm prunes centroids per kd-tree node
+of the \emph{data}; DNAK organises the \emph{centroids} and is
+agnostic to data layout, making the approaches composable in
+principle. Voronoi diagrams have long served descriptively in
+clustering and Delaunay structures appear in initialisation
+heuristics; we are not aware of prior work using the Delaunay graph of
+the evolving centroid set, combined with drift bounds and exact
+order-2 lower bounds, as an exact per-iteration pruning device.
+[TODO: systematic novelty search; cite Kanungo et al.\ 2002;
+Aurenhammer 1991.]
+
+% =====================================================================
+\section{Preliminaries}
+\label{sec:prelim}
+
+Let $C\subset\mathbb{R}^d$, $|C|=k$, be in general position. $V(c_j)$
+denotes the Voronoi cell of $c_j$; the Delaunay graph $G(C)$ joins
+$c_i,c_j$ iff their cells share a $(d-1)$-face. For $x\in\mathbb{R}^d$
+let $c_{(1)}(x),c_{(2)}(x)$ be its nearest and second-nearest
+centroids.
+
+\begin{lemma}[Greedy-walk correctness]\label{lem:walk}
+If $c_j\neq c_{(1)}(x)$ then some Delaunay neighbour $c_m$ of $c_j$
+satisfies $\lVert x-c_m\rVert<\lVert x-c_j\rVert$. Hence a greedy walk
+on $G(C)$ moving to any strictly closer neighbour terminates at
+$c_{(1)}(x)$.
+\end{lemma}
+\begin{proof}
+Since $c_j$ is not nearest to $x$ we have $x\notin V(c_j)$, while
+$c_j\in V(c_j)$. Voronoi cells are convex and closed, so the segment
+$[c_j,x]$ meets $V(c_j)$ in a closed subsegment $[c_j,q]$ with
+$q\neq x$; the exit point $q$ lies on $\partial V(c_j)$, hence in the
+closed cell of some other site $c_m$ with $\lVert q-c_m\rVert=\lVert
+q-c_j\rVert$, and under general position every site whose closed cell
+contains $q$ is a Delaunay neighbour of $c_j$. Because $q$ lies on the
+segment $[c_j,x]$,
+\[
+\lVert x-c_j\rVert=\lVert x-q\rVert+\lVert q-c_j\rVert
+=\lVert x-q\rVert+\lVert q-c_m\rVert\ \ge\ \lVert x-c_m\rVert
+\]
+by the triangle inequality. Equality would require $q\in[x,c_m]$,
+placing $c_m$ on the ray from $x$ through $q$ beyond $q$; but $c_j$
+lies on that same ray beyond $q$ at the same distance from $q$,
+forcing $c_m=c_j$, a contradiction. Hence $\lVert x-c_m\rVert<\lVert
+x-c_j\rVert$ strictly. The walk strictly decreases distance over a
+finite set, so it terminates, and by contraposition a terminal vertex
+with no strictly closer neighbour must be $c_{(1)}(x)$.
+\end{proof}
+
+\begin{lemma}[Order-2 Voronoi property]\label{lem:order2}
+For every $x$, $c_{(2)}(x)$ is a Delaunay neighbour of $c_{(1)}(x)$.
+\end{lemma}
+\begin{proof}
+Write $c_1=c_{(1)}(x)$, $c_2=c_{(2)}(x)$ and $d_s=\lVert
+x-c_s\rVert$, with $d_1<d_2<d_s$ for all other sites $s$ (general
+position). Move a probe point along the unit-speed segment
+$y(t)=x+t\,(c_2-x)/\lVert c_2-x\rVert$ and set $h_s(t)=\lVert
+y(t)-c_s\rVert$. Travelling straight at $c_2$ gives
+$h_2(t)=d_2-t$ exactly, the fastest possible decrease, while each
+$h_s$ is $1$-Lipschitz; hence for every other site $s$,
+$h_2(t)-h_s(t)\le h_2(0)-h_s(0)=d_2-d_s<0$ for all $t$: no third site
+ever becomes closer than $c_2$ along the path. The continuous
+function $f(t)=h_2(t)-h_1(t)$ satisfies $f(0)=d_2-d_1>0$ and
+$f(t)<0$ as $y(t)$ approaches $c_2$ (where $h_2\to 0$ but $h_1\to
+\lVert c_2-c_1\rVert>0$), so $f$ has a first zero $t^\ast$. The point
+$y^\ast=y(t^\ast)$ satisfies $h_1(y^\ast)=h_2(y^\ast)<h_s(y^\ast)$
+for every other $s$: its unique pair of joint-nearest sites is
+$\{c_1,c_2\}$, so $y^\ast$ lies in the relative interior of the
+common facet $V(c_1)\cap V(c_2)$. The two cells therefore share a
+$(d{-}1)$-face, i.e.\ $c_1c_2$ is a Delaunay edge. (This is the
+classical correspondence between nonempty order-2 Voronoi regions and
+Delaunay edges, here proved directly.)
+\end{proof}
+
+\begin{lemma}[Drift safety]\label{lem:drift}
+If each $c_j$ moves by $\delta_j$ and $\delta_{\max}=\max_j\delta_j$,
+then valid bounds $u\ge\lVert x-c_a\rVert$ and $l\le\min_{m\neq
+a}\lVert x-c_m\rVert$ remain valid after the corrections $u\mapsto
+u+\delta_a$, $l\mapsto l-\delta_{\max}$; if the corrected bounds
+satisfy $u\le l$, the nearest centroid of $x$ is unchanged.
+\end{lemma}
+\begin{proof}
+Triangle inequality: $\bigl|\lVert x-c'\rVert-\lVert
+x-c\rVert\bigr|\le\lVert c'-c\rVert$.
+\end{proof}
+
+% =====================================================================
+\section{The DNAK Algorithm}
+\label{sec:algo}
+
+DNAK stores per point its assignment $a_i$, an upper bound $u_i$, and
+a lower bound $l_i$ on the distance to all other centroids ---
+identical state to Hamerly's algorithm. The differences are (i) the
+fallback and (ii) bound quality: whenever DNAK re-examines a point,
+the walk of Lemma~\ref{lem:walk} finds the exact nearest centroid
+using only Delaunay neighbourhoods, and the minimum neighbour distance
+at the terminal centroid \emph{is} the exact second-nearest distance
+by Lemma~\ref{lem:order2}. Bounds therefore restart tight after every
+examination and decay only through drift.
+
+\begin{algorithm}[t]
+\caption{DNAK: one iteration (initialisation uses one full scan)}
+\begin{algorithmic}[1]
+\State Update centroids to cluster means; compute drifts $\delta_j$,
+$\delta_{\max}$; build $G(C)$
+\For{each point $x_i$}
+  \State $u_i \mathrel{+}= \delta_{a_i}$;\quad $l_i \mathrel{-}=
+  \delta_{\max}$
+  \If{$u_i\le l_i$} \textbf{continue}\Comment{0 computations}\EndIf
+  \State $u_i \gets \lVert x_i-c_{a_i}\rVert$
+  \If{$u_i\le l_i$} \textbf{continue}\Comment{1 computation}\EndIf
+  \State Greedy walk on $G(C)$ from $c_{a_i}$; end at $c^\ast$ with
+  neighbour distances $\{d_m\}$
+  \State $a_i\gets \ast$;\ $u_i\gets\lVert x_i-c^\ast\rVert$;\
+  $l_i\gets\min_m d_m$\Comment{exact, Lemma~\ref{lem:order2}}
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}[Exactness]\label{thm:exact}
+Under general position of the centroids at every iteration, DNAK
+produces the same assignments, centroids and SSE as Lloyd's algorithm
+at every iteration.
+\end{theorem}
+\begin{proof}
+Induction. Bounds valid at iteration entry remain valid after drift
+correction (Lemma~\ref{lem:drift}), so skipped points provably retain
+their nearest centroid; examined points are assigned to the true
+nearest by Lemma~\ref{lem:walk}, with bounds re-established exactly by
+construction and Lemma~\ref{lem:order2}. Identical assignments give
+identical mean updates, restoring the invariant.
+\end{proof}
+
+\paragraph{Ties and degenerate data}
+When a point is exactly equidistant from two centroids --- common in
+quantised data such as 8-bit images --- Lloyd's algorithm is
+ill-defined up to tie-breaking, and different valid tie choices can
+follow different descent trajectories. We therefore fix the rule
+``retain the current assignment unless a strictly closer centroid
+exists'' in all compared algorithms, and place quantised real data in
+general position by adding negligible jitter ($10^{-7}$ on unit-scaled
+data), disclosed in Section~\ref{sec:exp}. Under this protocol all
+runs in our study produced bit-identical outputs.
+
+\paragraph{Complexity}
+Let $\bar\nu$ be the mean Delaunay degree ($\le 6$ in the plane;
+$O(1)$ expected for well-distributed sites in fixed dimension), $h$
+the mean walk length (empirically $\le 2$), and $\rho_t$ the fraction
+of points failing both skip tests. Per iteration DNAK performs
+$O(n+\rho_t n\bar\nu h)$ distance computations, $O(n)$ bound updates,
+and one Delaunay construction: $O(k\log k)$ in the plane,
+$O(k^{\lceil d/2\rceil})$ in general --- negligible for $k\ll n$ in
+low dimension. Memory is $O(n+k)$; Elkan's is $O(nk)$.
+
+% =====================================================================
+\section{Experimental Evaluation}
+\label{sec:exp}
+
+\paragraph{Protocol}
+We compare Lloyd's, Hamerly's, Elkan's and DNAK from identical
+$k$-means++ initialisations, identical convergence criteria (no
+assignment change) and the tie rule above, over three initialisation
+seeds per configuration. Datasets: five synthetic Gaussian mixtures
+($n\in[10^4,3{\times}10^4]$, $d\in\{2,3,4\}$, $k\in[32,128]$) and
+three real datasets --- RGB pixels of two natural photographs (colour
+quantisation, $d=3$, $n=30{,}000$ subsampled, jitter $10^{-7}$) and a
+3-component PCA projection of the handwritten-digits data
+($n=1{,}797$, $k=10$). Exactness against Lloyd's algorithm was
+asserted programmatically on \emph{every} run. We report two metrics:
+(i)~point-to-centroid distance computations, and (ii)~estimated total
+operations, counting each $d$-dimensional distance as $3d$ floating
+point operations and each bound update as one, where per-iteration
+bound updates are $n(k{+}1)$ for Elkan and $2n$ for Hamerly and DNAK.
+[TODO before submission: additional large real datasets (e.g.\ 3D
+Road Network), Yinyang/Exponion baselines, 10+ seeds.]
+
+\begin{table}[t]
+\centering
+\caption{Mean distance computations (DC) over 3 seeds, DC reduction
+versus Lloyd's (mean$\pm$std), per-run bound-maintenance operations
+(BM), and total-work reduction versus Lloyd's. All runs verified exact.}
+\label{tab:main}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llrrrr}
+\toprule
+Configuration & Algorithm & DC & DC red. & BM ops & Total red. \\
+\midrule
+$n{=}$10000 $d{=}$2 $k{=}$32 & Lloyd & 10{,}666{,}666 & 1.00$\times$ & 0 & 1.0$\times$ \\
+ & Hamerly & 1{,}032{,}271 & 10.65$\times$ $\pm$ 1.92 & 666{,}666 & 9.3$\times$ \\
+ & Elkan & 416{,}207 & 25.60$\times$ $\pm$ 1.40 & 11{,}000{,}000 & 4.7$\times$ \\
+ & \textbf{DNAK} & 622{,}402 & 17.40$\times$ $\pm$ 2.39 & 666{,}666 & 14.5$\times$ \\
+\midrule
+$n{=}$10000 $d{=}$2 $k{=}$100 & Lloyd & 35{,}000{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
+ & Hamerly & 6{,}007{,}260 & 5.83$\times$ $\pm$ 0.21 & 700{,}000 & 5.7$\times$ \\
+ & Elkan & 1{,}165{,}737 & 30.02$\times$ $\pm$ 1.09 & 35{,}350{,}000 & 5.0$\times$ \\
+ & \textbf{DNAK} & 1{,}601{,}109 & 21.86$\times$ $\pm$ 0.83 & 700{,}000 & 20.4$\times$ \\
+\midrule
+$n{=}$20000 $d{=}$3 $k{=}$64 & Lloyd & 32{,}000{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
+ & Hamerly & 3{,}850{,}341 & 8.18$\times$ $\pm$ 1.74 & 1{,}000{,}000 & 8.1$\times$ \\
+ & Elkan & 1{,}437{,}901 & 22.06$\times$ $\pm$ 6.08 & 32{,}500{,}000 & 6.3$\times$ \\
+ & \textbf{DNAK} & 2{,}304{,}886 & 13.77$\times$ $\pm$ 3.65 & 1{,}000{,}000 & 13.2$\times$ \\
+\midrule
+$n{=}$20000 $d{=}$4 $k{=}$64 & Lloyd & 28{,}160{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
+ & Hamerly & 2{,}817{,}088 & 9.83$\times$ $\pm$ 1.58 & 880{,}000 & 9.7$\times$ \\
+ & Elkan & 1{,}379{,}481 & 20.31$\times$ $\pm$ 5.80 & 28{,}600{,}000 & 7.5$\times$ \\
+ & \textbf{DNAK} & 2{,}446{,}707 & 11.29$\times$ $\pm$ 1.96 & 880{,}000 & 11.2$\times$ \\
+\midrule
+$n{=}$30000 $d{=}$2 $k{=}$128 & Lloyd & 339{,}200{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
+ & Hamerly & 38{,}577{,}359 & 8.83$\times$ $\pm$ 0.64 & 5{,}300{,}000 & 8.6$\times$ \\
+ & Elkan & 4{,}947{,}189 & 68.41$\times$ $\pm$ 5.74 & 341{,}850{,}000 & 5.5$\times$ \\
+ & \textbf{DNAK} & 6{,}965{,}496 & 48.60$\times$ $\pm$ 3.42 & 5{,}300{,}000 & 43.2$\times$ \\
+\midrule
+china-RGB $n{=}$30000 $d{=}$3 $k{=}$64 & Lloyd & 195{,}200{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
+ & Hamerly & 25{,}770{,}842 & 7.53$\times$ $\pm$ 1.29 & 6{,}100{,}000 & 7.4$\times$ \\
+ & Elkan & 3{,}410{,}915 & 56.17$\times$ $\pm$ 8.91 & 198{,}250{,}000 & 7.7$\times$ \\
+ & \textbf{DNAK} & 8{,}250{,}028 & 23.40$\times$ $\pm$ 4.31 & 6{,}100{,}000 & 21.9$\times$ \\
+\midrule
+flower-RGB $n{=}$30000 $d{=}$3 $k{=}$32 & Lloyd & 78{,}400{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
+ & Hamerly & 10{,}192{,}669 & 7.80$\times$ $\pm$ 1.40 & 4{,}900{,}000 & 7.3$\times$ \\
+ & Elkan & 2{,}148{,}409 & 36.41$\times$ $\pm$ 1.87 & 80{,}850{,}000 & 7.0$\times$ \\
+ & \textbf{DNAK} & 5{,}480{,}772 & 14.54$\times$ $\pm$ 2.72 & 4{,}900{,}000 & 13.0$\times$ \\
+\midrule
+digits-PCA3 $n{=}$1797 $d{=}$3 $k{=}$10 & Lloyd & 401{,}330 & 1.00$\times$ & 0 & 1.0$\times$ \\
+ & Hamerly & 71{,}036 & 5.66$\times$ $\pm$ 0.32 & 80{,}266 & 5.0$\times$ \\
+ & Elkan & 39{,}973 & 10.04$\times$ $\pm$ 0.20 & 441{,}463 & 4.5$\times$ \\
+ & \textbf{DNAK} & 70{,}714 & 5.69$\times$ $\pm$ 0.34 & 80{,}266 & 5.0$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{comps_figure_v2.pdf}
+\caption{Left: distance computations (log scale) --- Elkan prunes the
+most distances, DNAK second, both far ahead of Hamerly. Right: total
+operations including mandatory bound maintenance --- Elkan's
+$\Theta(nk)$ per-iteration overhead erases its lead, and DNAK performs
+the least total work in every configuration.}
+\label{fig:comps}
+\end{figure}
+
+\paragraph{Findings}
+Table~\ref{tab:main} and Figure~\ref{fig:comps} support four
+conclusions. \emph{First}, DNAK strictly dominates Hamerly's algorithm
+--- the existing standard among $O(n)$-memory exact accelerators ---
+on distance computations in every configuration, by factors of
+$1.0\times$ (small $k{=}10$) up to $5.5\times$ ($k{=}128$), because
+its fallback examines a Delaunay neighbourhood rather than all $k$
+centroids. \emph{Second}, Elkan's algorithm computes the fewest raw
+distances, $1.4\times$--$2.6\times$ fewer than DNAK; we report this
+plainly. \emph{Third}, once Elkan's mandatory $\Theta(nk)$
+bound-maintenance work is included, DNAK performs the least total work
+of all four methods in every configuration --- up to $43.2\times$ less
+than Lloyd's at $k{=}128$, where Elkan achieves only $5.5\times$ ---
+while also using a factor-$k$ less memory. \emph{Fourth}, the results
+transfer from synthetic mixtures to real data: on RGB colour
+quantisation DNAK attains $14.5\times$--$23.4\times$ distance
+reductions and $13\times$--$22\times$ total-work reductions.
+Exactness held on all $96$ algorithm runs.
+
+\paragraph{Wall-clock results (compiled implementation)}
+To verify that the operation-count model predicts real performance,
+all four algorithms were re-implemented as LLVM-compiled kernels
+(Numba) sharing identical structure, tie rule and convergence
+criteria, and benchmarked on larger inputs: three synthetic mixtures
+with $n=100{,}000$ and the full $273{,}280$-pixel RGB image
+(Table~\ref{tab:wall}; three seeds; JIT compilation excluded via
+warm-up; exactness asserted on every run). The model's prediction is
+confirmed: DNAK is the fastest method in every configuration, up to
+$26.2\times$ faster than Lloyd's algorithm at $k{=}128$ and
+$15.9\times$ on the real image, while Elkan's algorithm --- despite
+computing the fewest distances --- is consistently \emph{slower} than
+Hamerly's in wall-clock terms because its $\Theta(nk)$ per-iteration
+bound maintenance dominates at these dimensionalities.
+
+\begin{table}[t]
+\centering
+\caption{Wall-clock time (seconds, mean$\pm$std over 3 seeds) and
+speedup versus Lloyd's algorithm; compiled (Numba) implementations.
+All runs verified exact.}
+\label{tab:wall}
+\small
+\begin{tabular}{llrr}
+\toprule
+Configuration & Algorithm & Time (s) & Speedup \\
+\midrule
+$n{=}$100000 $d{=}$2 $k{=}$64 & Lloyd & 4.56 $\pm$ 0.34 & 1.00$\times$ \\
+ & Hamerly & 0.57 $\pm$ 0.08 & 8.22$\times$ $\pm$ 1.88 \\
+ & Elkan & 1.17 $\pm$ 0.27 & 4.13$\times$ $\pm$ 1.02 \\
+ & \textbf{DNAK} & 0.28 $\pm$ 0.01 & 16.49$\times$ $\pm$ 2.00 \\
+\midrule
+$n{=}$100000 $d{=}$2 $k{=}$128 & Lloyd & 14.09 $\pm$ 2.13 & 1.00$\times$ \\
+ & Hamerly & 1.60 $\pm$ 0.13 & 8.75$\times$ $\pm$ 0.60 \\
+ & Elkan & 2.69 $\pm$ 0.55 & 5.30$\times$ $\pm$ 0.27 \\
+ & \textbf{DNAK} & 0.54 $\pm$ 0.05 & 26.17$\times$ $\pm$ 1.38 \\
+\midrule
+$n{=}$100000 $d{=}$3 $k{=}$64 & Lloyd & 3.81 $\pm$ 1.12 & 1.00$\times$ \\
+ & Hamerly & 0.41 $\pm$ 0.11 & 9.26$\times$ $\pm$ 0.39 \\
+ & Elkan & 0.80 $\pm$ 0.14 & 4.64$\times$ $\pm$ 0.67 \\
+ & \textbf{DNAK} & 0.34 $\pm$ 0.09 & 11.10$\times$ $\pm$ 0.54 \\
+\midrule
+china-RGB $n{=}$273280 $d{=}$3 $k{=}$64 & Lloyd & 24.98 $\pm$ 7.22 & 1.00$\times$ \\
+ & Hamerly & 2.96 $\pm$ 0.20 & 8.41$\times$ $\pm$ 2.30 \\
+ & Elkan & 4.95 $\pm$ 0.77 & 4.96$\times$ $\pm$ 0.73 \\
+ & \textbf{DNAK} & 1.54 $\pm$ 0.16 & 15.94$\times$ $\pm$ 3.08 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\section{Limitations}
+\label{sec:limits}
+
+Explicit Delaunay construction is practical only in low dimension
+($O(k^{\lceil d/2\rceil})$ worst case); our claims are restricted to
+$d\le 4$, a regime that nonetheless covers geospatial analytics,
+colour quantisation, and clustering of low-dimensional embeddings.
+For higher dimensions we outline, as future work, replacing the
+Delaunay graph with a Gabriel or centroid-$k$NN graph whose walk
+result is certified by the maintained bounds, with a full scan
+fallback preserving exactness when certification fails. The present
+evaluation uses three seeds per configuration and datasets up to
+$2.7\times 10^{5}$ points; the camera-ready study should add further
+large real datasets, more seeds, and the Yinyang and Exponion
+baselines. Exactness on tie-degenerate data holds only relative to
+the declared tie-breaking rule.
+
+% =====================================================================
+\section{Conclusion}
+\label{sec:conc}
+
+DNAK shows that the computational geometry of the evolving centroid
+set --- Delaunay adjacency, order-2 Voronoi structure, and greedy
+walks --- yields an exact $k$-means accelerator with Hamerly's memory
+footprint and near-Elkan pruning, and the lowest total operation count
+of the methods studied, in every configuration tested. Beyond the
+algorithm, the result substantiates a broader thesis claim: Euclidean
+and computational geometry supplies exact, quantifiable optimisation
+machinery for centroid-based clustering, not merely descriptive
+language.
+
+\section*{Declaration of competing interest}
+The authors declare no competing interests.
+
+\section*{Data availability}
+Reference implementation and experiment scripts to be released at
+[TODO: repository URL].
+
+\begin{thebibliography}{9}
+\bibitem{lloyd} S.~Lloyd, Least squares quantization in PCM, IEEE
+Trans.\ Inf.\ Theory 28(2) (1982) 129--137.
+\bibitem{elkan} C.~Elkan, Using the triangle inequality to accelerate
+$k$-means, ICML (2003).
+\bibitem{hamerly} G.~Hamerly, Making $k$-means even faster, SDM (2010).
+\bibitem{yinyang} Y.~Ding et al., Yinyang $k$-means: a drop-in
+replacement of the classic $k$-means with consistent speedup, ICML
+(2015).
+\bibitem{newling} J.~Newling, F.~Fleuret, Fast $k$-means with accurate
+bounds, ICML (2016).
+\bibitem{kanungo} T.~Kanungo et al., An efficient $k$-means clustering
+algorithm: analysis and implementation, IEEE TPAMI 24(7) (2002).
+\bibitem{aurenhammer} F.~Aurenhammer, Voronoi diagrams --- a survey of
+a fundamental geometric data structure, ACM Comput.\ Surv.\ 23(3)
+(1991).
+\bibitem{arthur} D.~Arthur, S.~Vassilvitskii, $k$-means++: the
+advantages of careful seeding, SODA (2007).
+\end{thebibliography}
+\end{document}

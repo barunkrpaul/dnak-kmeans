@@ -1,0 +1,17 @@
+config,algo,time_mean,time_std,speedup_mean,speedup_std
+synth n=100000 d=2 k=64,Lloyd,4.562,0.335,1.0,0.0
+synth n=100000 d=2 k=64,Hamerly,0.573,0.083,8.22,1.88
+synth n=100000 d=2 k=64,Elkan,1.17,0.271,4.13,1.02
+synth n=100000 d=2 k=64,DNAK,0.278,0.013,16.49,2.0
+synth n=100000 d=2 k=128,Lloyd,14.089,2.135,1.0,0.0
+synth n=100000 d=2 k=128,Hamerly,1.602,0.128,8.75,0.6
+synth n=100000 d=2 k=128,Elkan,2.686,0.554,5.3,0.27
+synth n=100000 d=2 k=128,DNAK,0.536,0.052,26.17,1.38
+synth n=100000 d=3 k=64,Lloyd,3.814,1.124,1.0,0.0
+synth n=100000 d=3 k=64,Hamerly,0.41,0.112,9.26,0.39
+synth n=100000 d=3 k=64,Elkan,0.803,0.139,4.64,0.67
+synth n=100000 d=3 k=64,DNAK,0.339,0.086,11.1,0.54
+china-RGB n=273280 d=3 k=64,Lloyd,24.977,7.223,1.0,0.0
+china-RGB n=273280 d=3 k=64,Hamerly,2.965,0.196,8.41,2.3
+china-RGB n=273280 d=3 k=64,Elkan,4.953,0.769,4.96,0.73
+china-RGB n=273280 d=3 k=64,DNAK,1.543,0.16,15.94,3.08
