@@ -111,12 +111,11 @@ MIT — see `LICENSE`.
 
 ## Citation
 
-```bibtex
 @unpublished{paul2026dnak,
   author = {Paul, Barun Kr},
-  title  = {DNAK: Exact Acceleration of Lloyd's $k$-Means in Linear
-            Memory via Delaunay-Neighbor Pruning},
-  note   = {Manuscript in preparation},
+  title  = {{DNAK}: Exact Acceleration of {Lloyd's} $k$-Means in Linear
+            Memory via {Delaunay}-Neighbor Pruning},
+  note   = {Manuscript in preparation. Code:
+            \url{https://github.com/barunkrpaul/dnak-kmeans}},
   year   = {2026}
 }
-```
