@@ -105,6 +105,11 @@ the CSVs in `results/`; no result is hand-typed. Random seeds are fixed in
 the scripts. A strict no-fabrication protocol applies: any figure or claim
 must trace to a script in this repository.
 
+**Reproduce in your browser:** open `DNAK_reproduce_colab.ipynb` in
+[Google Colab](https://colab.research.google.com/) (Runtime → Run all, ~10–15 min).
+It verifies exactness for all six methods and reproduces the DNAK/Exponion
+crossover on reduced problem sizes.
+
 ## License
 
 MIT — see `LICENSE`.
