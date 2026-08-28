@@ -9,7 +9,7 @@ less work, by exploiting the Delaunay graph of the evolving centroid set.
 > Delaunay-Neighbor Pruning"* (Barun Kr Paul, NITTTR Kolkata).
 > Status: manuscript in preparation; see `paper/dnak_paper.tex`.
 
-## The idea in one paragraph
+## The idea in one paragraph is given here
 
 In late k-means iterations almost no point changes cluster, yet Lloyd's
 algorithm still computes all `n × k` distances every round. DNAK maintains
