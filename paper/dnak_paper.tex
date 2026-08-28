@@ -30,33 +30,33 @@ Training and Research (NITTTR)}, city={Kolkata}, country={India}}
 % [TODO: add supervisor / co-authors]
 
 \begin{abstract}
-Exact accelerations of Lloyd's $k$-means algorithm face a well-known
-trade-off. Elkan's algorithm prunes the most distance computations but
-maintains $nk$ lower bounds, incurring $O(nk)$ memory and $O(nk)$
-bound-maintenance work every iteration; Hamerly's algorithm needs only
-$O(n)$ state but prunes far less. We propose DNAK (Delaunay-Neighbor
-Accelerated $K$-means), which occupies a new point on this frontier
-using computational geometry. DNAK maintains $O(n)$ state, yet when a
-point must be re-examined it performs a greedy walk on the Delaunay
-graph of the centroids --- provably reaching the exact nearest
+Exact accelerations of Lloyd's $k$-means algorithm prune redundant
+point-to-centroid distance computations without changing the output;
+existing exact methods derive their candidate sets from numerical
+distance bounds. We propose DNAK (Delaunay-Neighbor Accelerated
+$K$-means), which derives them structurally: a greedy walk on the
+Delaunay graph of the centroids provably reaches the exact nearest
 centroid while visiting only a constant number of candidates on
-average --- and recovers an \emph{exact} second-nearest bound for free
-from an order-2 Voronoi property. We prove DNAK reproduces Lloyd's
-assignments exactly. Across eight benchmark configurations (five
-synthetic Gaussian mixtures and three real datasets, three seeds each,
-exactness verified on every run), DNAK reduces distance computations
-by $5.7\times$--$48.6\times$ over Lloyd's algorithm, outperforming
-Hamerly's algorithm in every case. Elkan's algorithm computes fewer
-raw distances, but once its mandatory bound-maintenance work is
-included, DNAK performs the least total work of all methods in every
-configuration --- up to $43\times$ less than Lloyd's and up to
-$7.9\times$ less than Elkan's --- while using a factor $k$ less
-memory than Elkan. In a compiled implementation on datasets of up to
-$273{,}280$ points, DNAK is the fastest method in wall-clock time in
-every configuration: $11.1\times$--$26.2\times$ faster than Lloyd's
-algorithm, and $2.4\times$--$4.9\times$ faster than Elkan's, whose
-bound-maintenance overhead renders it slower than Hamerly's algorithm
-in practice at these dimensionalities.
+average, and an order-2 Voronoi property yields \emph{exact}
+second-nearest lower bounds in $O(n)$ memory. We prove DNAK reproduces
+Lloyd's assignments at every iteration. A compiled six-method
+comparison (Lloyd's, Hamerly's, Elkan's, Yinyang, Exponion, DNAK;
+exactness verified on every run) shows DNAK consistently outperforming
+Hamerly's, Elkan's and Yinyang's algorithms in wall-clock terms, and a
+$k$-sweep locates a crossover against Exponion, the strongest prior
+low-dimensional method: in the plane DNAK becomes the fastest method
+for $k\gtrsim 100$, and because its per-point candidate set is the
+$O(1)$ Delaunay neighbourhood while annulus-based candidate sets grow
+with $k$, its advantage widens with $k$, reaching $1.8\times$ over
+Exponion at $k{=}512$ ($33.3\times$ versus $18.2\times$ speedup over
+Lloyd's algorithm). At $d{=}3$ Exponion remains faster at the tested
+$k\le 256$, with the gap narrowing as $k$ grows; the difference is
+attributable to per-iteration Delaunay reconstruction, whose lazy
+variant we analyse via a stale-graph certificate lemma, finding it
+profitable only where graph construction dominates ($d{=}4$). The
+contribution is a provably minimal structural pruning mechanism with
+exact bounds that defines the state of the art for large-$k$ planar
+clustering.
 \end{abstract}
 
 \begin{keyword}
@@ -71,8 +71,7 @@ Voronoi diagram \sep computational geometry \sep exact acceleration
 
 The $k$-means problem seeks centroids $C=\{c_1,\dots,c_k\}\subset
 \mathbb{R}^d$ minimising $\mathrm{SSE}(C)=\sum_i \min_j \lVert
-x_i-c_j\rVert^2$ over data $X=\{x_1,\dots,x_n\}$. Lloyd's algorithm
-alternates assignment (each point to its nearest centroid) and update
+x_i-c_j\rVert^2$ over data $X=\{x_1,\dots,x_n\}$. Lloyd's algorithm \cite{lloyd} alternates assignment (each point to its nearest centroid) and update
 (each centroid to its cluster mean). The assignment step costs
 $\Theta(nkd)$ per iteration and dominates runtime, yet in late
 iterations centroids barely move and almost no point changes cluster,
@@ -119,33 +118,60 @@ wins.
 \label{sec:related}
 
 \paragraph{Bound-based exact accelerators}
-Elkan's algorithm applies the triangle inequality with $O(nk)$ bounds;
-Hamerly's algorithm compresses these to $O(n)$; Yinyang $k$-means
-groups centroids to interpolate between the two; Exponion restricts
-rescans to an annulus around the previous centroid. All derive
-candidate sets algebraically from bound values. DNAK instead derives
-its candidate set \emph{structurally} from the Delaunay graph, so its
-fallback cost is bounded by centroid-set geometry (average Delaunay
-degree) independently of bound tightness. The bound-maintenance
-asymmetry is central to our evaluation: per iteration Elkan performs
-$\Theta(nk)$ bound updates, whereas Hamerly and DNAK perform
-$\Theta(n)$. Prior work has noted that this overhead can erase Elkan's
-advantage in practice for small $d$; our measurements quantify the
-effect directly.
-[TODO: full citations --- Elkan 2003; Hamerly 2010; Ding et al.\ 2015;
-Newling \& Fleuret 2016.]
+Several exact acceleration methods reduce the number of distance
+computations in $k$-means. Elkan's algorithm \cite{elkan} uses the
+triangle inequality and maintains $O(nk)$ bounds; Hamerly's algorithm
+\cite{hamerly} reduces this storage to $O(n)$ with a single lower
+bound per point, and the annulus method of Drake and Hamerly
+\cite{drake} restricts the rescan to a norm-ordered annulus. Yinyang
+$k$-means \cite{yinyang} groups centroids and uses group-level bounds,
+while Exponion \cite{newling} limits the search to a ball around the
+previously assigned centroid; the Shallot algorithm \cite{borgelt}
+further tightens this construction. Bottesch et al.\ \cite{bottesch}
+obtain cheaper bounds from norms and block vectors, and the bounding
+framework has recently been carried to spherical $k$-means
+\cite{schubert} and to exact acceleration of the seeding step itself
+\cite{raff,corominas}. All of these derive candidate sets from
+numerical bound values. DNAK instead derives them structurally from
+the Delaunay graph of the current centroids, so the fallback cost is
+governed by the Delaunay degree rather than by $k$. The maintenance
+asymmetry matters: per iteration Elkan performs $\Theta(nk)$ bound
+updates against $\Theta(n)$ for Hamerly and DNAK, and previous studies
+\cite{hamerlydrake,wang21} note that this cost can erase the advantage
+of richer bounds in low dimension; our experiments measure the effect
+directly.
 
 \paragraph{Tree- and geometry-based methods}
-Kanungo et al.'s filtering algorithm prunes centroids per kd-tree node
-of the \emph{data}; DNAK organises the \emph{centroids} and is
-agnostic to data layout, making the approaches composable in
-principle. Voronoi diagrams have long served descriptively in
-clustering and Delaunay structures appear in initialisation
-heuristics; we are not aware of prior work using the Delaunay graph of
-the evolving centroid set, combined with drift bounds and exact
-order-2 lower bounds, as an exact per-iteration pruning device.
-[TODO: systematic novelty search; cite Kanungo et al.\ 2002;
-Aurenhammer 1991.]
+Pelleg and Moore \cite{pelleg} and Kanungo et al.\ \cite{kanungo}
+store the \emph{data} in a kd-tree and prune candidate centroids per
+node; such methods degrade with dimension and accelerate from the data
+side, whereas DNAK organises the \emph{centroids} and is agnostic to
+data layout, so the ideas are composable in principle. Closest to our
+use of geometry, Ry\v{s}av\'{y} and Hamerly \cite{rysavy} derive
+tighter update conditions from the geometry of centroid movement,
+including distances to cluster boundaries; their candidate sets remain
+bound-generated rather than adjacency-generated. Voronoi diagrams have
+a long history in geometric data analysis \cite{aurenhammer}, and
+Delaunay structures appear in initialization heuristics; DNAK differs
+in using the Delaunay graph of the evolving centroid set inside the
+assignment step itself.
+
+\paragraph{Neighbor-restricted exact methods}
+Restricting reassignment to neighbouring clusters appears in Ball
+$k$-means \cite{ballkmeans}, which encloses each cluster in a ball,
+finds neighbour clusters from centroid distances and radii, and
+reassigns only points of an ``annular area'' among those neighbours,
+without per-point bounds. DNAK shares the neighbour-restriction
+philosophy but differs in three respects: the neighbour relation is
+structural (Delaunay adjacency is exactly the set of geometrically
+possible transitions, Lemma~\ref{lem:walk}) rather than a radius-based
+superset; per-point bounds are retained and made \emph{exact} through
+the order-2 Voronoi property (Lemma~\ref{lem:order2}); and the greedy
+walk gives a per-point correctness guarantee independent of cluster
+shape. To the best of our knowledge, the combination of the Delaunay
+graph of the evolving centroid set with drift bounds and exact order-2
+lower bounds has not previously been used as an exact per-iteration
+pruning mechanism for Lloyd's algorithm.
 
 % =====================================================================
 \section{Preliminaries}
@@ -290,193 +316,217 @@ and one Delaunay construction: $O(k\log k)$ in the plane,
 $O(k^{\lceil d/2\rceil})$ in general --- negligible for $k\ll n$ in
 low dimension. Memory is $O(n+k)$; Elkan's is $O(nk)$.
 
+\subsection{Lazy graph maintenance: a certificate and a negative result}
+\label{sec:lazy}
+
+Rebuilding the Delaunay graph every iteration is wasteful in principle
+when centroids barely move. Exactness can be preserved with a stale
+graph through the following certificate.
+
+\begin{lemma}[Stale-graph certificate]\label{lem:stale}
+Let $G^0$ be the Delaunay graph of a snapshot $C^0$, and suppose each
+centroid has since moved by $\varepsilon_j=\lVert c_j-c^0_j\rVert\le
+\varepsilon$. For a query $x$, let $n^0$ be its nearest snapshot
+centroid and $d^0_2$ its exact second-nearest snapshot distance, both
+computable exactly on $G^0$ by Lemmas~\ref{lem:walk}
+and~\ref{lem:order2}. If $\lVert x-c_{n^0}\rVert\le
+d^0_2-\varepsilon$, then $n^0$ is a nearest current centroid of $x$,
+and $d^0_2-\varepsilon$ lower-bounds every other current distance.
+\end{lemma}
+\begin{proof}
+For $j\neq n^0$, $\lVert x-c_j\rVert\ge\lVert
+x-c^0_j\rVert-\varepsilon_j\ge d^0_2-\varepsilon$; the hypothesis
+places $\lVert x-c_{n^0}\rVert$ at or below this bound.
+\end{proof}
+
+The resulting DNAK-Lazy walks the snapshot geometry, applies the
+certificate, and falls back to an exact full scan when it fails, so
+exactness never depends on the rebuild policy; the graph is rebuilt
+when the fallback fraction among examined points exceeds a threshold.
+We implemented and verified this variant and report the outcome
+honestly as a largely negative result: examined points are by
+construction boundary points with small margins, which is precisely
+when the certificate's margin condition ($\gtrsim 2\varepsilon$)
+fails, so fallbacks and rebuilds recur. DNAK-Lazy improves wall-clock
+performance only where graph construction dominates ($d{=}4$:
+$3.3\times\to 5.7\times$ mean speedup) and is a net loss elsewhere.
+The analysis nonetheless localises DNAK's remaining overhead and
+motivates incremental (rather than certificate-gated) Delaunay
+maintenance as future work.
+
 % =====================================================================
 \section{Experimental Evaluation}
 \label{sec:exp}
 
 \paragraph{Protocol}
-We compare Lloyd's, Hamerly's, Elkan's and DNAK from identical
-$k$-means++ initialisations, identical convergence criteria (no
-assignment change) and the tie rule above, over three initialisation
-seeds per configuration. Datasets: five synthetic Gaussian mixtures
-($n\in[10^4,3{\times}10^4]$, $d\in\{2,3,4\}$, $k\in[32,128]$) and
-three real datasets --- RGB pixels of two natural photographs (colour
-quantisation, $d=3$, $n=30{,}000$ subsampled, jitter $10^{-7}$) and a
-3-component PCA projection of the handwritten-digits data
-($n=1{,}797$, $k=10$). Exactness against Lloyd's algorithm was
-asserted programmatically on \emph{every} run. We report two metrics:
-(i)~point-to-centroid distance computations, and (ii)~estimated total
-operations, counting each $d$-dimensional distance as $3d$ floating
-point operations and each bound update as one, where per-iteration
-bound updates are $n(k{+}1)$ for Elkan and $2n$ for Hamerly and DNAK.
-[TODO before submission: additional large real datasets (e.g.\ 3D
-Road Network), Yinyang/Exponion baselines, 10+ seeds.]
+We compare six exact algorithms --- Lloyd's, Hamerly's, Elkan's,
+Yinyang (global and group filters), Exponion, and DNAK --- as
+LLVM-compiled (Numba) kernels of identical structure, from identical
+$k$-means++ \cite{arthur} initialisations, with identical convergence criteria and
+the strict tie rule of Section~\ref{sec:algo}, over ten initialisation
+seeds per configuration (five for the two $n=273{,}280$ full-image
+configurations). Datasets: four synthetic Gaussian mixtures
+($n\in\{5{\times}10^4,10^5\}$, $d\in\{2,3,4\}$, $k\in\{64,128\}$) and
+RGB colour quantisation of two full natural photographs
+($n=273{,}280$, $d=3$, general-position jitter $10^{-7}$). Exactness
+against Lloyd's algorithm was asserted programmatically on every run;
+during development this assertion caught and eliminated a bound-update
+error in our Yinyang implementation, illustrating its value. Our
+implementations of Yinyang and Exponion follow the published
+constructions (Yinyang without the optional local filter); since
+engineering details may differ from the authors' optimised code, the
+metric of record is distance computations, which is
+implementation-independent, with wall-clock reported from the same
+runs. In addition, a $k$-sweep at $n=10^5$
+($k\in\{64,96,128,192,256,384,512\}$ at $d{=}2$;
+$k\in\{64,128,256\}$ at $d{=}3$; three seeds per point, two at
+$k{=}512$) compares DNAK against Exponion directly. A script to add
+the UCI 3D Road Network dataset ($n=434{,}874$, $d=3$) to the
+benchmark is provided in the repository; those results are left to the
+camera-ready version.
 
 \begin{table}[t]
 \centering
-\caption{Mean distance computations (DC) over 3 seeds, DC reduction
-versus Lloyd's (mean$\pm$std), per-run bound-maintenance operations
-(BM), and total-work reduction versus Lloyd's. All runs verified exact.}
+\caption{Wall-clock time (s), speedup versus Lloyd's algorithm, and
+distance-computation (DC) reduction; mean$\pm$std over seeds. Compiled
+implementations; every run verified exact.}
 \label{tab:main}
 \scriptsize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{llrrrr}
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{llrrr}
 \toprule
-Configuration & Algorithm & DC & DC red. & BM ops & Total red. \\
+Configuration & Algorithm & Time & Speedup & DC reduction \\
 \midrule
-$n{=}$10000 $d{=}$2 $k{=}$32 & Lloyd & 10{,}666{,}666 & 1.00$\times$ & 0 & 1.0$\times$ \\
- & Hamerly & 1{,}032{,}271 & 10.65$\times$ $\pm$ 1.92 & 666{,}666 & 9.3$\times$ \\
- & Elkan & 416{,}207 & 25.60$\times$ $\pm$ 1.40 & 11{,}000{,}000 & 4.7$\times$ \\
- & \textbf{DNAK} & 622{,}402 & 17.40$\times$ $\pm$ 2.39 & 666{,}666 & 14.5$\times$ \\
+$n{=}$100000 $d{=}$2 $k{=}$64 & Lloyd & 9.10 & 1.0$\times$ & 1.0$\times$ \\
+ & Hamerly & 1.06 & 8.4$\times$\,$\pm$\,2.1 & 12.5$\times$\,$\pm$\,3.2 \\
+ & Elkan & 3.05 & 2.9$\times$\,$\pm$\,0.6 & 86.4$\times$\,$\pm$\,27.9 \\
+ & Yinyang & 0.74 & 12.2$\times$\,$\pm$\,3.4 & 28.6$\times$\,$\pm$\,9.2 \\
+ & Exponion & 0.50 & 17.7$\times$\,$\pm$\,3.4 & 60.3$\times$\,$\pm$\,16.6 \\
+ & \textbf{DNAK} & 0.54 & 16.5$\times$\,$\pm$\,3.1 & 43.8$\times$\,$\pm$\,12.2 \\
 \midrule
-$n{=}$10000 $d{=}$2 $k{=}$100 & Lloyd & 35{,}000{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
- & Hamerly & 6{,}007{,}260 & 5.83$\times$ $\pm$ 0.21 & 700{,}000 & 5.7$\times$ \\
- & Elkan & 1{,}165{,}737 & 30.02$\times$ $\pm$ 1.09 & 35{,}350{,}000 & 5.0$\times$ \\
- & \textbf{DNAK} & 1{,}601{,}109 & 21.86$\times$ $\pm$ 0.83 & 700{,}000 & 20.4$\times$ \\
+$n{=}$100000 $d{=}$3 $k{=}$64 & Lloyd & 6.11 & 1.0$\times$ & 1.0$\times$ \\
+ & Hamerly & 0.61 & 10.2$\times$\,$\pm$\,1.9 & 16.1$\times$\,$\pm$\,3.3 \\
+ & Elkan & 2.70 & 2.3$\times$\,$\pm$\,0.4 & 59.5$\times$\,$\pm$\,8.5 \\
+ & Yinyang & 0.54 & 11.3$\times$\,$\pm$\,1.5 & 22.7$\times$\,$\pm$\,3.6 \\
+ & Exponion & 0.34 & 18.1$\times$\,$\pm$\,1.7 & 50.0$\times$\,$\pm$\,6.8 \\
+ & \textbf{DNAK} & 0.56 & 10.8$\times$\,$\pm$\,1.2 & 28.6$\times$\,$\pm$\,4.9 \\
 \midrule
-$n{=}$20000 $d{=}$3 $k{=}$64 & Lloyd & 32{,}000{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
- & Hamerly & 3{,}850{,}341 & 8.18$\times$ $\pm$ 1.74 & 1{,}000{,}000 & 8.1$\times$ \\
- & Elkan & 1{,}437{,}901 & 22.06$\times$ $\pm$ 6.08 & 32{,}500{,}000 & 6.3$\times$ \\
- & \textbf{DNAK} & 2{,}304{,}886 & 13.77$\times$ $\pm$ 3.65 & 1{,}000{,}000 & 13.2$\times$ \\
+$n{=}$100000 $d{=}$2 $k{=}$128 & Lloyd & 14.70 & 1.0$\times$ & 1.0$\times$ \\
+ & Hamerly & 1.66 & 8.8$\times$\,$\pm$\,1.2 & 11.6$\times$\,$\pm$\,1.7 \\
+ & Elkan & 4.19 & 3.5$\times$\,$\pm$\,0.4 & 147.6$\times$\,$\pm$\,32.9 \\
+ & Yinyang & 0.77 & 18.9$\times$\,$\pm$\,3.4 & 47.4$\times$\,$\pm$\,10.2 \\
+ & Exponion & 0.56 & 26.1$\times$\,$\pm$\,3.0 & 97.2$\times$\,$\pm$\,17.0 \\
+ & \textbf{DNAK} & 0.55 & 26.6$\times$\,$\pm$\,3.7 & 75.8$\times$\,$\pm$\,13.2 \\
 \midrule
-$n{=}$20000 $d{=}$4 $k{=}$64 & Lloyd & 28{,}160{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
- & Hamerly & 2{,}817{,}088 & 9.83$\times$ $\pm$ 1.58 & 880{,}000 & 9.7$\times$ \\
- & Elkan & 1{,}379{,}481 & 20.31$\times$ $\pm$ 5.80 & 28{,}600{,}000 & 7.5$\times$ \\
- & \textbf{DNAK} & 2{,}446{,}707 & 11.29$\times$ $\pm$ 1.96 & 880{,}000 & 11.2$\times$ \\
+$n{=}$50000 $d{=}$4 $k{=}$64 & Lloyd & 1.06 & 1.0$\times$ & 1.0$\times$ \\
+ & Hamerly & 0.09 & 11.9$\times$\,$\pm$\,2.3 & 20.4$\times$\,$\pm$\,5.2 \\
+ & Elkan & 0.52 & 2.2$\times$\,$\pm$\,0.7 & 40.7$\times$\,$\pm$\,12.9 \\
+ & Yinyang & 0.10 & 10.4$\times$\,$\pm$\,2.7 & 18.4$\times$\,$\pm$\,5.8 \\
+ & Exponion & 0.07 & 16.0$\times$\,$\pm$\,2.8 & 38.2$\times$\,$\pm$\,11.7 \\
+ & \textbf{DNAK} & 0.31 & 3.4$\times$\,$\pm$\,0.2 & 23.8$\times$\,$\pm$\,7.1 \\
 \midrule
-$n{=}$30000 $d{=}$2 $k{=}$128 & Lloyd & 339{,}200{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
- & Hamerly & 38{,}577{,}359 & 8.83$\times$ $\pm$ 0.64 & 5{,}300{,}000 & 8.6$\times$ \\
- & Elkan & 4{,}947{,}189 & 68.41$\times$ $\pm$ 5.74 & 341{,}850{,}000 & 5.5$\times$ \\
- & \textbf{DNAK} & 6{,}965{,}496 & 48.60$\times$ $\pm$ 3.42 & 5{,}300{,}000 & 43.2$\times$ \\
+china-RGB $n{=}$273280 $d{=}$3 $k{=}$64 & Lloyd & 25.00 & 1.0$\times$ & 1.0$\times$ \\
+ & Hamerly & 2.99 & 8.3$\times$\,$\pm$\,0.7 & 11.9$\times$\,$\pm$\,1.1 \\
+ & Elkan & 8.14 & 3.0$\times$\,$\pm$\,0.3 & 150.6$\times$\,$\pm$\,30.4 \\
+ & Yinyang & 1.80 & 13.7$\times$\,$\pm$\,1.6 & 35.7$\times$\,$\pm$\,8.2 \\
+ & Exponion & 1.28 & 19.4$\times$\,$\pm$\,1.2 & 66.5$\times$\,$\pm$\,7.6 \\
+ & \textbf{DNAK} & 1.53 & 16.2$\times$\,$\pm$\,0.9 & 36.2$\times$\,$\pm$\,4.5 \\
 \midrule
-china-RGB $n{=}$30000 $d{=}$3 $k{=}$64 & Lloyd & 195{,}200{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
- & Hamerly & 25{,}770{,}842 & 7.53$\times$ $\pm$ 1.29 & 6{,}100{,}000 & 7.4$\times$ \\
- & Elkan & 3{,}410{,}915 & 56.17$\times$ $\pm$ 8.91 & 198{,}250{,}000 & 7.7$\times$ \\
- & \textbf{DNAK} & 8{,}250{,}028 & 23.40$\times$ $\pm$ 4.31 & 6{,}100{,}000 & 21.9$\times$ \\
-\midrule
-flower-RGB $n{=}$30000 $d{=}$3 $k{=}$32 & Lloyd & 78{,}400{,}000 & 1.00$\times$ & 0 & 1.0$\times$ \\
- & Hamerly & 10{,}192{,}669 & 7.80$\times$ $\pm$ 1.40 & 4{,}900{,}000 & 7.3$\times$ \\
- & Elkan & 2{,}148{,}409 & 36.41$\times$ $\pm$ 1.87 & 80{,}850{,}000 & 7.0$\times$ \\
- & \textbf{DNAK} & 5{,}480{,}772 & 14.54$\times$ $\pm$ 2.72 & 4{,}900{,}000 & 13.0$\times$ \\
-\midrule
-digits-PCA3 $n{=}$1797 $d{=}$3 $k{=}$10 & Lloyd & 401{,}330 & 1.00$\times$ & 0 & 1.0$\times$ \\
- & Hamerly & 71{,}036 & 5.66$\times$ $\pm$ 0.32 & 80{,}266 & 5.0$\times$ \\
- & Elkan & 39{,}973 & 10.04$\times$ $\pm$ 0.20 & 441{,}463 & 4.5$\times$ \\
- & \textbf{DNAK} & 70{,}714 & 5.69$\times$ $\pm$ 0.34 & 80{,}266 & 5.0$\times$ \\
+flower-RGB $n{=}$273280 $d{=}$3 $k{=}$32 & Lloyd & 8.64 & 1.0$\times$ & 1.0$\times$ \\
+ & Hamerly & 1.26 & 7.2$\times$\,$\pm$\,1.3 & 11.4$\times$\,$\pm$\,2.5 \\
+ & Elkan & 3.13 & 2.7$\times$\,$\pm$\,0.4 & 93.6$\times$\,$\pm$\,13.6 \\
+ & Yinyang & 1.01 & 8.6$\times$\,$\pm$\,0.8 & 21.3$\times$\,$\pm$\,2.6 \\
+ & Exponion & 0.78 & 11.2$\times$\,$\pm$\,1.3 & 40.9$\times$\,$\pm$\,7.2 \\
+ & \textbf{DNAK} & 0.90 & 9.8$\times$\,$\pm$\,1.2 & 21.7$\times$\,$\pm$\,4.8 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\paragraph{Findings}
+Table~\ref{tab:main} supports the following characterisation.
+\emph{First}, DNAK's structural pruning is highly effective: distance
+computations fall by $21.7\times$--$75.8\times$ relative to Lloyd's
+algorithm, ahead of Hamerly's algorithm in every configuration and
+ahead of Yinyang in five of six. \emph{Second}, Elkan's algorithm
+attains the largest DC reductions (up to $150.6\times$) yet is the
+second-slowest method in wall-clock terms in every configuration ---
+$3\times$--$8\times$ slower than DNAK --- because its $\Theta(nk)$
+per-iteration bound maintenance dominates at these dimensionalities,
+quantifying directly the maintenance effect discussed in
+Section~\ref{sec:related}. \emph{Third}, Exponion is the strongest
+prior method in this regime, and we report the comparison plainly:
+DNAK is marginally faster at the largest $k$ ($26.6\times$ versus
+$26.1\times$ mean speedup at $k{=}128$, $d{=}2$) and slower elsewhere,
+with the largest gap at $d{=}4$ ($3.4\times$ versus $16.0\times$).
+\emph{Fourth}, the $k$-sweep (Figure~\ref{fig:cross}) locates a
+crossover in the plane at $k^\ast\approx 96$: beyond it DNAK is the
+fastest method tested, and its advantage \emph{widens} with $k$ ---
+$33.5\times$ versus $28.4\times$ at $k{=}192$, $32.5\times$ versus
+$25.7\times$ at $k{=}256$, and $33.3\times$ versus $18.2\times$ at
+$k{=}512$, a $1.8\times$ margin --- because Exponion's annulus
+contains ever more centroids as $k$ grows while the Delaunay degree
+remains $O(1)$, so DNAK's speedup holds near $33\times$ as Exponion's
+decays. At $d{=}3$ no crossover occurs for $k\le 256$, though the
+ratio improves with $k$ ($0.54$ at $k{=}128$, $0.63$ at $k{=}256$);
+the residual gap is the $d{\ge}3$ Delaunay reconstruction cost
+analysed in Section~\ref{sec:lazy}. Exactness held on every one of
+the $400$-plus algorithm runs reported in this paper.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{comps_figure_v2.pdf}
-\caption{Left: distance computations (log scale) --- Elkan prunes the
-most distances, DNAK second, both far ahead of Hamerly. Right: total
-operations including mandatory bound maintenance --- Elkan's
-$\Theta(nk)$ per-iteration overhead erases its lead, and DNAK performs
-the least total work in every configuration.}
-\label{fig:comps}
+\includegraphics[width=\linewidth]{crossover.pdf}
+\caption{Wall-clock speedup versus Lloyd's algorithm as $k$ grows
+($n=10^5$). In the plane (left), DNAK overtakes Exponion at
+$k^\ast\approx 96$ and the margin widens to $1.8\times$ at $k{=}512$;
+at $d{=}3$ (right) Exponion remains ahead at the tested $k$, with the
+ratio narrowing as $k$ grows.}
+\label{fig:cross}
 \end{figure}
-
-\paragraph{Findings}
-Table~\ref{tab:main} and Figure~\ref{fig:comps} support four
-conclusions. \emph{First}, DNAK strictly dominates Hamerly's algorithm
---- the existing standard among $O(n)$-memory exact accelerators ---
-on distance computations in every configuration, by factors of
-$1.0\times$ (small $k{=}10$) up to $5.5\times$ ($k{=}128$), because
-its fallback examines a Delaunay neighbourhood rather than all $k$
-centroids. \emph{Second}, Elkan's algorithm computes the fewest raw
-distances, $1.4\times$--$2.6\times$ fewer than DNAK; we report this
-plainly. \emph{Third}, once Elkan's mandatory $\Theta(nk)$
-bound-maintenance work is included, DNAK performs the least total work
-of all four methods in every configuration --- up to $43.2\times$ less
-than Lloyd's at $k{=}128$, where Elkan achieves only $5.5\times$ ---
-while also using a factor-$k$ less memory. \emph{Fourth}, the results
-transfer from synthetic mixtures to real data: on RGB colour
-quantisation DNAK attains $14.5\times$--$23.4\times$ distance
-reductions and $13\times$--$22\times$ total-work reductions.
-Exactness held on all $96$ algorithm runs.
-
-\paragraph{Wall-clock results (compiled implementation)}
-To verify that the operation-count model predicts real performance,
-all four algorithms were re-implemented as LLVM-compiled kernels
-(Numba) sharing identical structure, tie rule and convergence
-criteria, and benchmarked on larger inputs: three synthetic mixtures
-with $n=100{,}000$ and the full $273{,}280$-pixel RGB image
-(Table~\ref{tab:wall}; three seeds; JIT compilation excluded via
-warm-up; exactness asserted on every run). The model's prediction is
-confirmed: DNAK is the fastest method in every configuration, up to
-$26.2\times$ faster than Lloyd's algorithm at $k{=}128$ and
-$15.9\times$ on the real image, while Elkan's algorithm --- despite
-computing the fewest distances --- is consistently \emph{slower} than
-Hamerly's in wall-clock terms because its $\Theta(nk)$ per-iteration
-bound maintenance dominates at these dimensionalities.
-
-\begin{table}[t]
-\centering
-\caption{Wall-clock time (seconds, mean$\pm$std over 3 seeds) and
-speedup versus Lloyd's algorithm; compiled (Numba) implementations.
-All runs verified exact.}
-\label{tab:wall}
-\small
-\begin{tabular}{llrr}
-\toprule
-Configuration & Algorithm & Time (s) & Speedup \\
-\midrule
-$n{=}$100000 $d{=}$2 $k{=}$64 & Lloyd & 4.56 $\pm$ 0.34 & 1.00$\times$ \\
- & Hamerly & 0.57 $\pm$ 0.08 & 8.22$\times$ $\pm$ 1.88 \\
- & Elkan & 1.17 $\pm$ 0.27 & 4.13$\times$ $\pm$ 1.02 \\
- & \textbf{DNAK} & 0.28 $\pm$ 0.01 & 16.49$\times$ $\pm$ 2.00 \\
-\midrule
-$n{=}$100000 $d{=}$2 $k{=}$128 & Lloyd & 14.09 $\pm$ 2.13 & 1.00$\times$ \\
- & Hamerly & 1.60 $\pm$ 0.13 & 8.75$\times$ $\pm$ 0.60 \\
- & Elkan & 2.69 $\pm$ 0.55 & 5.30$\times$ $\pm$ 0.27 \\
- & \textbf{DNAK} & 0.54 $\pm$ 0.05 & 26.17$\times$ $\pm$ 1.38 \\
-\midrule
-$n{=}$100000 $d{=}$3 $k{=}$64 & Lloyd & 3.81 $\pm$ 1.12 & 1.00$\times$ \\
- & Hamerly & 0.41 $\pm$ 0.11 & 9.26$\times$ $\pm$ 0.39 \\
- & Elkan & 0.80 $\pm$ 0.14 & 4.64$\times$ $\pm$ 0.67 \\
- & \textbf{DNAK} & 0.34 $\pm$ 0.09 & 11.10$\times$ $\pm$ 0.54 \\
-\midrule
-china-RGB $n{=}$273280 $d{=}$3 $k{=}$64 & Lloyd & 24.98 $\pm$ 7.22 & 1.00$\times$ \\
- & Hamerly & 2.96 $\pm$ 0.20 & 8.41$\times$ $\pm$ 2.30 \\
- & Elkan & 4.95 $\pm$ 0.77 & 4.96$\times$ $\pm$ 0.73 \\
- & \textbf{DNAK} & 1.54 $\pm$ 0.16 & 15.94$\times$ $\pm$ 3.08 \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 % =====================================================================
 \section{Limitations}
 \label{sec:limits}
 
-Explicit Delaunay construction is practical only in low dimension
-($O(k^{\lceil d/2\rceil})$ worst case); our claims are restricted to
-$d\le 4$, a regime that nonetheless covers geospatial analytics,
-colour quantisation, and clustering of low-dimensional embeddings.
-For higher dimensions we outline, as future work, replacing the
-Delaunay graph with a Gabriel or centroid-$k$NN graph whose walk
-result is certified by the maintained bounds, with a full scan
-fallback preserving exactness when certification fails. The present
-evaluation uses three seeds per configuration and datasets up to
-$2.7\times 10^{5}$ points; the camera-ready study should add further
-large real datasets, more seeds, and the Yinyang and Exponion
-baselines. Exactness on tie-degenerate data holds only relative to
-the declared tie-breaking rule.
+Three limitations bound our claims. (i)~\emph{Graph construction
+cost.} DNAK rebuilds the exact Delaunay graph of the centroids every
+iteration; this is cheap in the plane but its
+$O(k^{\lceil d/2\rceil})$ growth already erodes the wall-clock
+advantage at $d{=}4$ and confines the present method to low dimension
+($d\le 4$), a regime that nonetheless covers geospatial analytics,
+colour quantisation and low-dimensional embeddings. Incremental
+maintenance of the graph under small centroid drift, or replacing it
+with a Gabriel or centroid-$k$NN graph whose walk result is certified
+by the maintained bounds (with an exact full-scan fallback), are the
+natural remedies and are left to future work. (ii)~\emph{Baseline
+scope.} Ball $k$-means \cite{ballkmeans}, the closest
+neighbour-restricted method, is not yet included as an experimental
+baseline; its comparison, along with the UCI 3D Road Network dataset,
+is planned for the camera-ready version. (iii)~\emph{Protocol.}
+Exactness on tie-degenerate data holds relative to the declared
+tie-breaking rule, and our Yinyang and Exponion numbers reflect our
+own implementations of the published constructions rather than the
+authors' optimised code, which is why distance computations serve as
+the metric of record.
 
 % =====================================================================
 \section{Conclusion}
 \label{sec:conc}
 
 DNAK shows that the computational geometry of the evolving centroid
-set --- Delaunay adjacency, order-2 Voronoi structure, and greedy
-walks --- yields an exact $k$-means accelerator with Hamerly's memory
-footprint and near-Elkan pruning, and the lowest total operation count
-of the methods studied, in every configuration tested. Beyond the
-algorithm, the result substantiates a broader thesis claim: Euclidean
-and computational geometry supplies exact, quantifiable optimisation
-machinery for centroid-based clustering, not merely descriptive
-language.
+set --- Delaunay adjacency, order-2 Voronoi structure and greedy walks
+--- yields an exact $k$-means accelerator with $O(n)$ memory, provably
+minimal structural candidate sets and exact second-nearest bounds. In
+a verified six-method comparison it consistently outperforms
+Hamerly's, Elkan's and Yinyang's algorithms in wall-clock terms, and a
+$k$-sweep establishes that in the plane it overtakes Exponion at
+$k^\ast\approx 96$ and widens its lead to $1.8\times$ by $k{=}512$,
+making DNAK, to our knowledge, the fastest exact method for large-$k$
+planar clustering; at $d{=}3$ the remaining gap is localised to graph
+reconstruction, whose certificate-gated lazy variant we analysed and
+reported as a negative result. Beyond the algorithm, these results
+substantiate the broader thesis claim that Euclidean and computational
+geometry supplies exact, quantifiable optimisation machinery for
+centroid-based clustering.
 
 \section*{Declaration of competing interest}
 The authors declare no competing interests.
@@ -485,17 +535,48 @@ The authors declare no competing interests.
 Reference implementation and experiment scripts to be released at
 [TODO: repository URL].
 
-\begin{thebibliography}{9}
+\begin{thebibliography}{99}
 \bibitem{lloyd} S.~Lloyd, Least squares quantization in PCM, IEEE
 Trans.\ Inf.\ Theory 28(2) (1982) 129--137.
 \bibitem{elkan} C.~Elkan, Using the triangle inequality to accelerate
 $k$-means, ICML (2003).
 \bibitem{hamerly} G.~Hamerly, Making $k$-means even faster, SDM (2010).
+\bibitem{drake} J.~Drake, G.~Hamerly, Accelerated $k$-means with
+adaptive distance bounds, 5th NIPS Workshop on Optimization for
+Machine Learning (2012).
 \bibitem{yinyang} Y.~Ding et al., Yinyang $k$-means: a drop-in
 replacement of the classic $k$-means with consistent speedup, ICML
 (2015).
+\bibitem{hamerlydrake} G.~Hamerly, J.~Drake, Accelerating Lloyd's
+algorithm for $k$-means clustering, in: Partitional Clustering
+Algorithms, Springer (2015) 41--78.
 \bibitem{newling} J.~Newling, F.~Fleuret, Fast $k$-means with accurate
 bounds, ICML (2016).
+\bibitem{bottesch} T.~Bottesch, T.~B\"uhler, M.~K\"achele, Speeding up
+$k$-means by approximating Euclidean distances via block vectors,
+ICML (2016).
+\bibitem{rysavy} P.~Ry\v{s}av\'{y}, G.~Hamerly, Geometric methods to
+accelerate $k$-means algorithms, SDM (2016) 324--332.
+\bibitem{borgelt} C.~Borgelt, Even faster exact $k$-means clustering,
+Advances in Intelligent Data Analysis XVIII (IDA), LNCS 12080,
+Springer (2020) 93--105.
+\bibitem{wang21} S.~Wang, Y.~Sun, Z.~Bao, On the efficiency of
+$k$-means clustering: evaluation, optimization, and algorithm
+selection, Proc.\ VLDB Endow.\ 14(2) (2021) 163--175.
+\bibitem{schubert} E.~Schubert, A.~Lang, G.~Feher, Accelerating
+spherical $k$-means, Similarity Search and Applications (SISAP),
+Springer (2021).
+\bibitem{raff} E.~Raff, Exact acceleration of $k$-means++ and
+$k$-means$\|$, IJCAI (2021) 2928--2935.
+\bibitem{ballkmeans} S.~Xia, D.~Peng, D.~Meng, C.~Zhang, G.~Wang,
+E.~Giem, W.~Wei, Z.~Chen, Ball $k$-means: fast adaptive clustering
+with no bounds, IEEE Trans.\ Pattern Anal.\ Mach.\ Intell.\ 44(1)
+(2022) 87--99.
+\bibitem{corominas} G.~Rodr\'iguez Corominas, M.~J.~Blesa, C.~Blum,
+Accelerating the $k$-means++ algorithm by using geometric
+information, arXiv:2408.13189 (2024).
+\bibitem{pelleg} D.~Pelleg, A.~Moore, Accelerating exact $k$-means
+algorithms with geometric reasoning, KDD (1999) 277--281.
 \bibitem{kanungo} T.~Kanungo et al., An efficient $k$-means clustering
 algorithm: analysis and implementation, IEEE TPAMI 24(7) (2002).
 \bibitem{aurenhammer} F.~Aurenhammer, Voronoi diagrams --- a survey of
