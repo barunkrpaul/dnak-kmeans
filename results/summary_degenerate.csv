@@ -1,0 +1,11 @@
+case,runs,exact
+"8-bit RGB, no jitter",24,24
+collinear points in R^2,24,24
+duplicated points (x3),24,24
+integer grid 60x60 (exact ties),24,24
+k = 3 in d = 3,24,24
+"k close to n (n=60, k=50)",24,24
+overlapping clusters (spread 5),24,24
+points on a circle,24,24
+scale 1e-6,24,24
+scale 1e6,24,24

@@ -1,16 +1,16 @@
 """
-DNAK: Delaunay-Neighbor Accelerated K-means (exact acceleration of Lloyd's).
-Baselines: Lloyd's algorithm (standard) and Hamerly's algorithm (bound-based accelerator).
-Primary metric: number of point-to-centroid distance computations (implementation-independent).
-Author: prototype for Barun Kr Paul's PhD research.
+Readable pure NumPy/SciPy reference implementations of Lloyd's algorithm,
+Hamerly's algorithm and DNAK. These are written for clarity, not speed;
+all timings in the paper come from the compiled kernels in kernels.py.
 """
 import numpy as np
 import time
-import csv
 from scipy.spatial import Delaunay
-from scipy.spatial.qhull import QhullError
+try:
+    from scipy.spatial import QhullError
+except ImportError:  # older SciPy
+    from scipy.spatial.qhull import QhullError
 
-rng_global = np.random.default_rng(42)
 
 # ---------------------------------------------------------------- data / init
 
@@ -235,53 +235,14 @@ def dnak(X, C0, max_iter=300):
                 time=t, graph_time=graph_time, sse=sse_of(X, a, C),
                 skipped=skipped_total, hops=walk_hops_total)
 
-# ---------------------------------------------------------------- benchmark
-
-def run_config(n, d, k, seed):
-    X = make_blobs(n, d, k_true=k, seed=seed)
-    C0 = kmeanspp_init(X, k, seed=seed + 1)
-    rL = lloyd(X, C0)
-    rH = hamerly(X, C0)
-    rD = dnak(X, C0)
-
-    exact_H = np.array_equal(rL["labels"], rH["labels"])
-    exact_D = np.array_equal(rL["labels"], rD["labels"])
-    sse_ok = (abs(rL["sse"] - rD["sse"]) / rL["sse"] < 1e-10 and
-              abs(rL["sse"] - rH["sse"]) / rL["sse"] < 1e-10)
-
-    rows = []
-    for r in (rL, rH, rD):
-        rows.append(dict(n=n, d=d, k=k, algo=r["name"], iters=r["iters"],
-                         comps=r["comps"], time=round(r["time"], 3),
-                         sse=round(r["sse"], 2),
-                         reduction_vs_lloyd=round(rL["comps"] / r["comps"], 2)))
-    print(f"\n=== n={n} d={d} k={k} ===")
-    print(f"identical labels: Hamerly={exact_H}  DNAK={exact_D}  SSE match={sse_ok}")
-    for row in rows:
-        print(f"  {row['algo']:8s} iters={row['iters']:3d} "
-              f"dist_comps={row['comps']:>12,d}  "
-              f"reduction={row['reduction_vs_lloyd']:6.2f}x  "
-              f"time={row['time']:7.3f}s  SSE={row['sse']:.2f}")
-    if not (exact_D and sse_ok):
-        print("  !!! EXACTNESS VIOLATION — DO NOT USE THESE RESULTS !!!")
-    return rows, exact_D and sse_ok
-
+# ---------------------------------------------------------------- demo
 if __name__ == "__main__":
-    configs = [
-        (10000, 2, 32, 7),
-        (10000, 2, 100, 11),
-        (20000, 3, 64, 13),
-        (20000, 4, 64, 17),
-        (30000, 2, 128, 19),
-    ]
-    all_rows, all_exact = [], True
-    for cfg in configs:
-        rows, ok = run_config(*cfg)
-        all_rows += rows
-        all_exact &= ok
-    with open("/home/claude/results.csv", "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(all_rows[0].keys()))
-        w.writeheader()
-        w.writerows(all_rows)
-    print(f"\nAll configs exact: {all_exact}")
-    print("Results saved to results.csv")
+    X = make_blobs(5000, 2, 32, seed=7)
+    C0 = kmeanspp_init(X, 32, seed=8)
+    rL, rH, rD = lloyd(X, C0), hamerly(X, C0), dnak(X, C0)
+    for r in (rL, rH, rD):
+        print(f"{r['name']:8s} iters={r['iters']:3d} comps={r['comps']:>10,d} "
+              f"sse={r['sse']:.6f}")
+    assert np.array_equal(rL["labels"], rD["labels"]), "DNAK differs from Lloyd"
+    assert np.array_equal(rL["labels"], rH["labels"]), "Hamerly differs from Lloyd"
+    print("reference implementations agree with Lloyd's algorithm")

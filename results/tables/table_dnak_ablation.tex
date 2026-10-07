@@ -1,0 +1,11 @@
+\begin{tabular}{lrrrrrr}
+\toprule
+Variant & \multicolumn{2}{c}{Synth., $d{=}2$, $k{=}512$} & \multicolumn{2}{c}{Synth., $d{=}3$, $k{=}512$} & \multicolumn{2}{c}{Uber, $d{=}2$, $k{=}256$} \\
+ & time (s) & dist. (M) & time (s) & dist. (M) & time (s) & dist. (M) \\
+\midrule
+DNAK-B & 1.15 & 65.3 & 1.92 & 83.2 & 1.52 & 88.0 \\
++ Delaunay $s$-test, annulus stop & 1.14 & 58.1 & 1.66 & 60.7 & 1.29 & 62.3 \\
++ local bounds, walk initialisation & 0.53 & 3.4 & 1.02 & 7.6 & 0.61 & 5.2 \\
++ certificate reuse (DNAK) & 0.45 & 3.4 & 1.11 & 7.6 & 0.51 & 5.2 \\
+\bottomrule
+\end{tabular}

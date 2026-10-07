@@ -1,0 +1,21 @@
+\begin{tabular}{llrrrr}
+\toprule
+Data, $k$ & Method & Total (s) & \shortstack[r]{Centroid-side\\ work (s)} & \shortstack[r]{Assignment\\ pass (s)} & DC ($10^6$) \\
+\midrule
+Syn. 2-D, 128 & Exponion, full sort & 0.59 & 0.12 & 0.47 & 21.2 \\
+ & Exponion, annuli & 0.53 & 0.10 & 0.43 & 25.1 \\
+ & DNAK & 0.44 & 0.08 & 0.36 & 27.0 \\
+\midrule
+Uber 2-D, 256 & Exponion, full sort & 1.16 & 0.27 & 0.88 & 66.1 \\
+ & Exponion, annuli & 1.32 & 0.26 & 1.05 & 78.3 \\
+ & DNAK & 1.05 & 0.10 & 0.96 & 88.0 \\
+\midrule
+Syn. 2-D, 512 & Exponion, full sort & 1.89 & 1.20 & 0.69 & 59.4 \\
+ & Exponion, annuli & 1.80 & 1.08 & 0.73 & 65.3 \\
+ & DNAK & 0.84 & 0.18 & 0.66 & 65.3 \\
+\midrule
+Syn. 3-D, 512 & Exponion, full sort & 1.69 & 0.90 & 0.79 & 61.8 \\
+ & Exponion, annuli & 1.53 & 0.74 & 0.79 & 70.4 \\
+ & DNAK & 1.28 & 0.47 & 0.81 & 83.2 \\
+\bottomrule
+\end{tabular}

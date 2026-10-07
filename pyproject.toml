@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dnak-kmeans"
+version = "1.0.0"
+description = "DNAK: exact acceleration of Lloyd's k-means via Delaunay-neighbour pruning"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Barun Kr. Paul"}, {name = "Kinsuk Giri"}]
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.26", "scipy>=1.11", "numba>=0.60", "pandas>=2.0",
+                "scikit-learn>=1.3", "matplotlib>=3.8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,7 @@
+config,n,d,k,seed,method,implementation,iters,time_s,same_labels_as_dnak,same_iters_as_dnak
+uber-full-k1024,1511443,2,1024,101,DNAK,ours (Numba),79,15.0154,True,True
+uber-full-k1024,1511443,2,1024,101,Exponion,ours (Numba),79,18.3227,True,True
+uber-full-k1024,1511443,2,1024,101,Exponion,eakmeans (C++),79,11.1170,True,True
+uber-full-k1024,1511443,2,1024,101,Yinyang,eakmeans (C++),79,29.8280,True,True
+uber-full-k1024,1511443,2,1024,101,Ball k-means,original (C++),-1,nan,False,False
+uber-full-k1024,1511443,2,1024,101,Ball k-means (ring),original (C++),-1,nan,False,False

@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "DNAK: Delaunay-Neighbor Accelerated k-means"
+version: 1.0.0
+license: MIT
+repository-code: "https://github.com/barunkrpaul/dnak-kmeans"
+authors:
+  - family-names: Paul
+    given-names: "Barun Kr."
+    email: barunkrpaul.cse@gmail.com
+  - family-names: Giri
+    given-names: Kinsuk
+    email: kinsuk@nitttrkol.ac.in

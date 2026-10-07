@@ -1,0 +1,91 @@
+config,seed,rep,method,iters,comps,time_s,same_as_dnak6
+synth-2D-k128,101,0,DNAK-6,194,3637972,0.4570,True
+synth-2D-k128,101,0,Exponion (eakmeans),194,-1,0.3620,True
+synth-2D-k128,101,0,Ball k-means (original),194,-1,0.5838,True
+synth-2D-k128,101,1,DNAK-6,194,3637972,0.5266,True
+synth-2D-k128,101,1,Exponion (eakmeans),194,-1,0.4060,True
+synth-2D-k128,101,1,Ball k-means (original),194,-1,0.4866,True
+synth-2D-k128,202,0,DNAK-6,144,3404507,0.3552,True
+synth-2D-k128,202,0,Exponion (eakmeans),144,-1,0.3180,True
+synth-2D-k128,202,0,Ball k-means (original),144,-1,0.4676,True
+synth-2D-k128,202,1,DNAK-6,144,3404507,0.3553,True
+synth-2D-k128,202,1,Exponion (eakmeans),144,-1,0.2740,True
+synth-2D-k128,202,1,Ball k-means (original),144,-1,0.4742,True
+synth-2D-k128,303,0,DNAK-6,146,3549020,0.4192,True
+synth-2D-k128,303,0,Exponion (eakmeans),146,-1,0.3180,True
+synth-2D-k128,303,0,Ball k-means (original),146,-1,0.4574,True
+synth-2D-k128,303,1,DNAK-6,146,3549020,0.3883,True
+synth-2D-k128,303,1,Exponion (eakmeans),146,-1,0.3020,True
+synth-2D-k128,303,1,Ball k-means (original),146,-1,0.4703,True
+sweep-2D-k512,101,0,DNAK-6,90,3198532,0.4525,True
+sweep-2D-k512,101,0,Exponion (eakmeans),90,-1,0.7980,True
+sweep-2D-k512,101,0,Ball k-means (original),90,-1,0.7825,True
+sweep-2D-k512,101,1,DNAK-6,90,3198532,0.4736,True
+sweep-2D-k512,101,1,Exponion (eakmeans),90,-1,0.8200,True
+sweep-2D-k512,101,1,Ball k-means (original),90,-1,0.6391,True
+sweep-2D-k512,202,0,DNAK-6,105,3831294,0.6032,True
+sweep-2D-k512,202,0,Exponion (eakmeans),105,-1,0.9700,True
+sweep-2D-k512,202,0,Ball k-means (original),105,-1,1.0922,True
+sweep-2D-k512,202,1,DNAK-6,105,3831294,0.6550,True
+sweep-2D-k512,202,1,Exponion (eakmeans),105,-1,0.9020,True
+sweep-2D-k512,202,1,Ball k-means (original),105,-1,1.0023,True
+sweep-2D-k512,303,0,DNAK-6,91,3158442,0.5103,True
+sweep-2D-k512,303,0,Exponion (eakmeans),91,-1,0.7890,True
+sweep-2D-k512,303,0,Ball k-means (original),91,-1,0.7537,True
+sweep-2D-k512,303,1,DNAK-6,91,3158442,0.4382,True
+sweep-2D-k512,303,1,Exponion (eakmeans),91,-1,0.7900,True
+sweep-2D-k512,303,1,Ball k-means (original),91,-1,0.7322,True
+sweep-3D-k512,101,0,DNAK-6,57,7179149,0.9020,True
+sweep-3D-k512,101,0,Exponion (eakmeans),57,-1,0.7500,True
+sweep-3D-k512,101,0,Ball k-means (original),57,-1,0.6931,True
+sweep-3D-k512,101,1,DNAK-6,57,7179149,0.9612,True
+sweep-3D-k512,101,1,Exponion (eakmeans),57,-1,0.8200,True
+sweep-3D-k512,101,1,Ball k-means (original),57,-1,0.6378,True
+sweep-3D-k512,202,0,DNAK-6,86,7894447,1.2984,True
+sweep-3D-k512,202,0,Exponion (eakmeans),86,-1,0.9450,True
+sweep-3D-k512,202,0,Ball k-means (original),86,-1,0.8841,True
+sweep-3D-k512,202,1,DNAK-6,86,7894447,1.3053,True
+sweep-3D-k512,202,1,Exponion (eakmeans),86,-1,1.0110,True
+sweep-3D-k512,202,1,Ball k-means (original),86,-1,0.8516,True
+sweep-3D-k512,303,0,DNAK-6,71,7577017,1.1463,True
+sweep-3D-k512,303,0,Exponion (eakmeans),71,-1,0.8740,True
+sweep-3D-k512,303,0,Ball k-means (original),71,-1,0.6169,True
+sweep-3D-k512,303,1,DNAK-6,71,7577017,1.1181,True
+sweep-3D-k512,303,1,Exponion (eakmeans),71,-1,0.8680,True
+sweep-3D-k512,303,1,Ball k-means (original),71,-1,0.6217,True
+uber-k256,101,0,DNAK-6,55,3965700,0.3310,True
+uber-k256,101,0,Exponion (eakmeans),55,-1,0.5440,True
+uber-k256,101,0,Ball k-means (original),55,-1,0.6052,True
+uber-k256,101,1,DNAK-6,55,3965700,0.3747,True
+uber-k256,101,1,Exponion (eakmeans),55,-1,0.5330,True
+uber-k256,101,1,Ball k-means (original),55,-1,0.5489,True
+uber-k256,202,0,DNAK-6,103,4489104,0.4487,True
+uber-k256,202,0,Exponion (eakmeans),103,-1,0.8250,True
+uber-k256,202,0,Ball k-means (original),103,-1,0.9388,True
+uber-k256,202,1,DNAK-6,103,4489104,0.5480,True
+uber-k256,202,1,Exponion (eakmeans),103,-1,0.7950,True
+uber-k256,202,1,Ball k-means (original),103,-1,0.6818,True
+uber-k256,303,0,DNAK-6,130,7186401,0.6814,True
+uber-k256,303,0,Exponion (eakmeans),130,-1,0.7940,True
+uber-k256,303,0,Ball k-means (original),130,-1,1.4309,True
+uber-k256,303,1,DNAK-6,130,7186401,0.6898,True
+uber-k256,303,1,Exponion (eakmeans),130,-1,0.8540,True
+uber-k256,303,1,Ball k-means (original),130,-1,1.1574,True
+road-k64,101,0,DNAK-6,211,40096319,2.5503,True
+road-k64,101,0,Exponion (eakmeans),211,-1,2.7100,True
+road-k64,101,0,Ball k-means (original),211,-1,7.3463,True
+road-k64,101,1,DNAK-6,211,40096319,2.4787,True
+road-k64,101,1,Exponion (eakmeans),211,-1,2.8130,True
+road-k64,101,1,Ball k-means (original),211,-1,7.7637,True
+road-k64,202,0,DNAK-6,150,24333378,1.5991,True
+road-k64,202,0,Exponion (eakmeans),150,-1,1.7000,True
+road-k64,202,0,Ball k-means (original),150,-1,5.1912,True
+road-k64,202,1,DNAK-6,150,24333378,1.7673,True
+road-k64,202,1,Exponion (eakmeans),150,-1,1.7720,True
+road-k64,202,1,Ball k-means (original),150,-1,4.9987,True
+road-k64,303,0,DNAK-6,256,35803809,2.5109,True
+road-k64,303,0,Exponion (eakmeans),256,-1,2.4350,True
+road-k64,303,0,Ball k-means (original),256,-1,9.2132,True
+road-k64,303,1,DNAK-6,256,35803809,2.7239,True
+road-k64,303,1,Exponion (eakmeans),256,-1,2.4240,True
+road-k64,303,1,Ball k-means (original),256,-1,9.2734,True

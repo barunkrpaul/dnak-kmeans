@@ -1,0 +1,127 @@
+config,n,d,k,seed,method,implementation,iters,time_s,same_labels_as_dnak,same_iters_as_dnak
+synth-2D-k128,100000,2,128,101,DNAK,ours (Numba),194,0.6546,True,True
+synth-2D-k128,100000,2,128,101,Exponion,ours (Numba),194,0.6834,True,True
+synth-2D-k128,100000,2,128,101,Exponion,eakmeans (C++),194,0.3010,True,True
+synth-2D-k128,100000,2,128,101,Yinyang,eakmeans (C++),194,0.5600,True,True
+synth-2D-k128,100000,2,128,101,Hamerly,eakmeans (C++),194,1.2710,True,True
+synth-2D-k128,100000,2,128,101,Ball k-means,original (C++),194,0.2882,True,True
+synth-2D-k128,100000,2,128,101,Ball k-means (ring),original (C++),194,0.4068,True,True
+synth-2D-k128,100000,2,128,202,DNAK,ours (Numba),144,0.4478,True,True
+synth-2D-k128,100000,2,128,202,Exponion,ours (Numba),144,0.5460,True,True
+synth-2D-k128,100000,2,128,202,Exponion,eakmeans (C++),144,0.3060,True,True
+synth-2D-k128,100000,2,128,202,Yinyang,eakmeans (C++),144,0.5300,True,True
+synth-2D-k128,100000,2,128,202,Hamerly,eakmeans (C++),144,1.0980,True,True
+synth-2D-k128,100000,2,128,202,Ball k-means,original (C++),144,0.2557,True,True
+synth-2D-k128,100000,2,128,202,Ball k-means (ring),original (C++),144,0.4238,True,True
+synth-2D-k128,100000,2,128,303,DNAK,ours (Numba),146,0.4661,True,True
+synth-2D-k128,100000,2,128,303,Exponion,ours (Numba),146,0.5146,True,True
+synth-2D-k128,100000,2,128,303,Exponion,eakmeans (C++),146,0.2420,True,True
+synth-2D-k128,100000,2,128,303,Yinyang,eakmeans (C++),146,0.4450,True,True
+synth-2D-k128,100000,2,128,303,Hamerly,eakmeans (C++),146,1.2500,True,True
+synth-2D-k128,100000,2,128,303,Ball k-means,original (C++),146,0.3346,True,True
+synth-2D-k128,100000,2,128,303,Ball k-means (ring),original (C++),146,0.4137,True,True
+sweep-2D-k256,100000,2,256,101,DNAK,ours (Numba),156,0.6969,True,True
+sweep-2D-k256,100000,2,256,101,Exponion,ours (Numba),156,1.0114,True,True
+sweep-2D-k256,100000,2,256,101,Exponion,eakmeans (C++),156,0.4370,True,True
+sweep-2D-k256,100000,2,256,101,Yinyang,eakmeans (C++),156,0.8280,True,True
+sweep-2D-k256,100000,2,256,101,Hamerly,eakmeans (C++),156,2.6050,True,True
+sweep-2D-k256,100000,2,256,101,Ball k-means,original (C++),156,0.3611,True,True
+sweep-2D-k256,100000,2,256,101,Ball k-means (ring),original (C++),156,0.5629,True,True
+sweep-2D-k256,100000,2,256,202,DNAK,ours (Numba),169,0.7104,True,True
+sweep-2D-k256,100000,2,256,202,Exponion,ours (Numba),169,1.0855,True,True
+sweep-2D-k256,100000,2,256,202,Exponion,eakmeans (C++),169,0.4610,True,True
+sweep-2D-k256,100000,2,256,202,Yinyang,eakmeans (C++),169,0.8180,True,True
+sweep-2D-k256,100000,2,256,202,Hamerly,eakmeans (C++),169,2.6230,True,True
+sweep-2D-k256,100000,2,256,202,Ball k-means,original (C++),169,0.3819,True,True
+sweep-2D-k256,100000,2,256,202,Ball k-means (ring),original (C++),169,0.4810,True,True
+sweep-2D-k256,100000,2,256,303,DNAK,ours (Numba),170,0.7653,True,True
+sweep-2D-k256,100000,2,256,303,Exponion,ours (Numba),170,1.2190,True,True
+sweep-2D-k256,100000,2,256,303,Exponion,eakmeans (C++),170,0.4470,True,True
+sweep-2D-k256,100000,2,256,303,Yinyang,eakmeans (C++),170,0.8680,True,True
+sweep-2D-k256,100000,2,256,303,Hamerly,eakmeans (C++),170,2.4960,True,True
+sweep-2D-k256,100000,2,256,303,Ball k-means,original (C++),170,0.3409,True,True
+sweep-2D-k256,100000,2,256,303,Ball k-means (ring),original (C++),170,0.5666,True,True
+sweep-2D-k512,100000,2,512,101,DNAK,ours (Numba),90,0.8771,True,True
+sweep-2D-k512,100000,2,512,101,Exponion,ours (Numba),90,1.7168,True,True
+sweep-2D-k512,100000,2,512,101,Exponion,eakmeans (C++),90,0.6130,True,True
+sweep-2D-k512,100000,2,512,101,Yinyang,eakmeans (C++),90,1.2590,True,True
+sweep-2D-k512,100000,2,512,101,Hamerly,eakmeans (C++),90,3.8600,True,True
+sweep-2D-k512,100000,2,512,101,Ball k-means,original (C++),90,0.4263,True,True
+sweep-2D-k512,100000,2,512,101,Ball k-means (ring),original (C++),90,0.4907,True,True
+sweep-2D-k512,100000,2,512,202,DNAK,ours (Numba),105,0.9977,True,True
+sweep-2D-k512,100000,2,512,202,Exponion,ours (Numba),105,2.4863,True,True
+sweep-2D-k512,100000,2,512,202,Exponion,eakmeans (C++),105,0.6760,True,True
+sweep-2D-k512,100000,2,512,202,Yinyang,eakmeans (C++),105,1.4040,True,True
+sweep-2D-k512,100000,2,512,202,Hamerly,eakmeans (C++),105,4.9060,True,True
+sweep-2D-k512,100000,2,512,202,Ball k-means,original (C++),105,0.4270,True,True
+sweep-2D-k512,100000,2,512,202,Ball k-means (ring),original (C++),105,0.6114,True,True
+sweep-2D-k512,100000,2,512,303,DNAK,ours (Numba),91,1.0839,True,True
+sweep-2D-k512,100000,2,512,303,Exponion,ours (Numba),91,1.9300,True,True
+sweep-2D-k512,100000,2,512,303,Exponion,eakmeans (C++),91,0.6800,True,True
+sweep-2D-k512,100000,2,512,303,Yinyang,eakmeans (C++),91,1.2510,True,True
+sweep-2D-k512,100000,2,512,303,Hamerly,eakmeans (C++),91,3.9480,True,True
+sweep-2D-k512,100000,2,512,303,Ball k-means,original (C++),91,0.4125,True,True
+sweep-2D-k512,100000,2,512,303,Ball k-means (ring),original (C++),91,0.4535,True,True
+sweep-3D-k512,100000,3,512,101,DNAK,ours (Numba),57,1.2815,True,True
+sweep-3D-k512,100000,3,512,101,Exponion,ours (Numba),57,1.4442,True,True
+sweep-3D-k512,100000,3,512,101,Exponion,eakmeans (C++),57,0.7920,True,True
+sweep-3D-k512,100000,3,512,101,Yinyang,eakmeans (C++),57,1.1570,True,True
+sweep-3D-k512,100000,3,512,101,Hamerly,eakmeans (C++),57,4.3840,True,True
+sweep-3D-k512,100000,3,512,101,Ball k-means,original (C++),57,0.2900,True,True
+sweep-3D-k512,100000,3,512,101,Ball k-means (ring),original (C++),57,0.5109,True,True
+sweep-3D-k512,100000,3,512,202,DNAK,ours (Numba),86,1.5045,True,True
+sweep-3D-k512,100000,3,512,202,Exponion,ours (Numba),86,1.9553,True,True
+sweep-3D-k512,100000,3,512,202,Exponion,eakmeans (C++),86,0.7170,True,True
+sweep-3D-k512,100000,3,512,202,Yinyang,eakmeans (C++),86,1.2800,True,True
+sweep-3D-k512,100000,3,512,202,Hamerly,eakmeans (C++),86,6.4170,True,True
+sweep-3D-k512,100000,3,512,202,Ball k-means,original (C++),86,0.3666,True,True
+sweep-3D-k512,100000,3,512,202,Ball k-means (ring),original (C++),86,0.5460,True,True
+sweep-3D-k512,100000,3,512,303,DNAK,ours (Numba),71,1.2909,True,True
+sweep-3D-k512,100000,3,512,303,Exponion,ours (Numba),71,1.5704,True,True
+sweep-3D-k512,100000,3,512,303,Exponion,eakmeans (C++),71,0.7540,True,True
+sweep-3D-k512,100000,3,512,303,Yinyang,eakmeans (C++),71,1.3400,True,True
+sweep-3D-k512,100000,3,512,303,Hamerly,eakmeans (C++),71,6.1470,True,True
+sweep-3D-k512,100000,3,512,303,Ball k-means,original (C++),71,0.4754,True,True
+sweep-3D-k512,100000,3,512,303,Ball k-means (ring),original (C++),71,0.4776,True,True
+uber-k256,200000,2,256,101,DNAK,ours (Numba),55,0.7387,True,True
+uber-k256,200000,2,256,101,Exponion,ours (Numba),55,0.8662,True,True
+uber-k256,200000,2,256,101,Exponion,eakmeans (C++),55,0.5080,True,True
+uber-k256,200000,2,256,101,Yinyang,eakmeans (C++),55,1.1500,True,True
+uber-k256,200000,2,256,101,Hamerly,eakmeans (C++),55,2.7910,True,True
+uber-k256,200000,2,256,101,Ball k-means,original (C++),55,0.4575,True,True
+uber-k256,200000,2,256,101,Ball k-means (ring),original (C++),55,0.3954,True,True
+uber-k256,200000,2,256,202,DNAK,ours (Numba),103,1.1123,True,True
+uber-k256,200000,2,256,202,Exponion,ours (Numba),103,1.3955,True,True
+uber-k256,200000,2,256,202,Exponion,eakmeans (C++),103,0.8200,True,True
+uber-k256,200000,2,256,202,Yinyang,eakmeans (C++),103,1.9780,True,True
+uber-k256,200000,2,256,202,Hamerly,eakmeans (C++),103,5.6790,True,True
+uber-k256,200000,2,256,202,Ball k-means,original (C++),103,0.4256,True,True
+uber-k256,200000,2,256,202,Ball k-means (ring),original (C++),103,0.5161,True,True
+uber-k256,200000,2,256,303,DNAK,ours (Numba),130,1.3131,True,True
+uber-k256,200000,2,256,303,Exponion,ours (Numba),130,1.4837,True,True
+uber-k256,200000,2,256,303,Exponion,eakmeans (C++),130,0.7480,True,True
+uber-k256,200000,2,256,303,Yinyang,eakmeans (C++),130,1.6410,True,True
+uber-k256,200000,2,256,303,Hamerly,eakmeans (C++),130,4.3770,True,True
+uber-k256,200000,2,256,303,Ball k-means,original (C++),130,0.6499,True,True
+uber-k256,200000,2,256,303,Ball k-means (ring),original (C++),130,0.9666,True,True
+road-k64,434874,3,64,101,DNAK,ours (Numba),211,2.6595,True,True
+road-k64,434874,3,64,101,Exponion,ours (Numba),211,2.3819,True,True
+road-k64,434874,3,64,101,Exponion,eakmeans (C++),211,2.1810,True,True
+road-k64,434874,3,64,101,Yinyang,eakmeans (C++),211,2.3290,True,True
+road-k64,434874,3,64,101,Hamerly,eakmeans (C++),211,4.1460,True,True
+road-k64,434874,3,64,101,Ball k-means,original (C++),211,3.5296,True,True
+road-k64,434874,3,64,101,Ball k-means (ring),original (C++),211,3.6502,True,True
+road-k64,434874,3,64,202,DNAK,ours (Numba),150,1.9270,True,True
+road-k64,434874,3,64,202,Exponion,ours (Numba),150,1.5040,True,True
+road-k64,434874,3,64,202,Exponion,eakmeans (C++),150,1.3870,True,True
+road-k64,434874,3,64,202,Yinyang,eakmeans (C++),150,1.4760,True,True
+road-k64,434874,3,64,202,Hamerly,eakmeans (C++),150,2.5710,True,True
+road-k64,434874,3,64,202,Ball k-means,original (C++),150,2.6618,True,True
+road-k64,434874,3,64,202,Ball k-means (ring),original (C++),150,3.2452,True,True
+road-k64,434874,3,64,303,DNAK,ours (Numba),256,2.4181,True,True
+road-k64,434874,3,64,303,Exponion,ours (Numba),256,2.5235,True,True
+road-k64,434874,3,64,303,Exponion,eakmeans (C++),256,1.7680,True,True
+road-k64,434874,3,64,303,Yinyang,eakmeans (C++),256,2.3190,True,True
+road-k64,434874,3,64,303,Hamerly,eakmeans (C++),256,3.3350,True,True
+road-k64,434874,3,64,303,Ball k-means,original (C++),256,3.7794,True,True
+road-k64,434874,3,64,303,Ball k-means (ring),original (C++),256,3.9483,True,True
